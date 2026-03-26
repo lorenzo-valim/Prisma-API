@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("ProjetoPrisma")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+498e3c468a4bc5ac59365ef6a4ace46e7ce47965")]
 [assembly: System.Reflection.AssemblyProductAttribute("ProjetoPrisma")]
 [assembly: System.Reflection.AssemblyTitleAttribute("ProjetoPrisma")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
