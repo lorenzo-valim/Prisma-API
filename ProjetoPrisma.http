@@ -1,6 +1,6 @@
 @ProjetoPrisma_HostAddress = http://localhost:5263
 
-GET {{ProjetoPrisma_HostAddress}}/weatherforecast/
+GET {{ProjetoPrisma_HostAddress}}/projetoprisma/
 Accept: application/json
 
 ###

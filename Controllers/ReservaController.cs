@@ -6,8 +6,11 @@ using Microsoft.AspNetCore.Mvc;
 using ProjetoPrisma.Data;
 using ProjetoPrisma.Models;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
+
 namespace ProjetoPrisma.Controllers
 {
+
     [ApiController]
     [Route("api/[controller]")]
     public class ReservaController : ControllerBase
@@ -19,21 +22,41 @@ namespace ProjetoPrisma.Controllers
             _appDbContext = appDbContext;
         }
         // Código para criar, ler, atualizar e deletar reservas. O final do código para cada operação é indicado por um comentário.
+        private async Task<string> ValidarIdsReservaAsync(Guid salaId, Guid usuarioId)
+        {
+            var salaExists = await _appDbContext.Salas.AnyAsync(s => s.Id == salaId);
+            var usuarioExists = await _appDbContext.Usuarios.AnyAsync(u => u.Id == usuarioId);
+
+            if (!salaExists || !usuarioExists)
+            {
+                return "SalaId ou UsuarioId inválido.";
+            }
+
+
+
+            // Retorna null (nada) se os dois IDs existirem, significando que a validação passou.
+            return null;
+        }
+
+
+
 
         // POST: api/Reserva
         [HttpPost]
         public async Task<IActionResult> CreateReserva(Reserva reserva)
         {
-            var salaExists = await _appDbContext.Salas.AnyAsync(s => s.Id == reserva.SalaId);
-            var usuarioExists = await _appDbContext.Usuarios.AnyAsync(u => u.Id == reserva.UsuarioId);
+            // Chama a função reutilizável
+            var erroValidacao = await ValidarIdsReservaAsync(reserva.Id_Sala, reserva.Id_Usuario);
 
-            if (!salaExists || !usuarioExists)
+            // O "if" agora só verifica se a função retornou algum erro
+            if (erroValidacao != null)
             {
-                return BadRequest("SalaId ou UsuarioId inválido.");
+                return BadRequest(erroValidacao);
             }
 
             _appDbContext.Reservas.Add(reserva);
             await _appDbContext.SaveChangesAsync();
+
             return Ok(reserva);
         }
         // final do POST
@@ -49,7 +72,7 @@ namespace ProjetoPrisma.Controllers
 
         // GET: api/Reserva/{id}
         [HttpGet("{id}")]
-        public async Task<IActionResult> GetReserva(int id)
+        public async Task<IActionResult> GetReserva(Guid id)
         {
             var reserva = await _appDbContext.Reservas.FindAsync(id);
             if (reserva == null)
@@ -62,13 +85,14 @@ namespace ProjetoPrisma.Controllers
 
         // PUT: api/Reserva/{id}
         [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateReserva(int id, Reserva reserva)
+        public async Task<IActionResult> UpdateReserva(Guid id, Reserva reserva)
         {
-            var salaExists = await _appDbContext.Salas.AnyAsync(s => s.Id == reserva.SalaId);
-            var usuarioExists = await _appDbContext.Usuarios.AnyAsync(u => u.Id == reserva.UsuarioId);
-            if (!salaExists || !usuarioExists)
+            var erroValidacao = await ValidarIdsReservaAsync(reserva.Id_Sala, reserva.Id_Usuario);
+
+            // O "if" agora só verifica se a função retornou algum erro
+            if (erroValidacao != null)
             {
-                return BadRequest("SalaId ou UsuarioId inválido.");
+                return BadRequest(erroValidacao);
             }
             if (id != reserva.Id)
             {
@@ -82,7 +106,7 @@ namespace ProjetoPrisma.Controllers
 
         // DELETE: api/Reserva/{id}
         [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteReserva(int id)
+        public async Task<IActionResult> DeleteReserva(Guid id)
         {
             var reserva = await _appDbContext.Reservas.FindAsync(id);
             if (reserva == null)

@@ -2,6 +2,8 @@
 
 using Microsoft.EntityFrameworkCore;
 using ProjetoPrisma.Data;
+using ProjetoPrisma.Models;
+using ProjetoPrisma.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -11,13 +13,22 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+// Configure SMTP Settings from appsettings.json
+builder.Services.Configure<SmtpSettings>(builder.Configuration.GetSection("SmtpSettings"));
+
+// Configure Email Verification Settings from appsettings.json
+builder.Services.Configure<EmailVerificationSettings>(builder.Configuration.GetSection("EmailVerification"));
+
+// Register Email Service
+builder.Services.AddScoped<IEmailService, EmailService>();
+
 
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowReact", policy =>
     {
         policy
-            .WithOrigins("http://localhost:3000") 
+            .WithOrigins("http://localhost:5173") 
             .AllowAnyHeader()
             .AllowAnyMethod();
     });

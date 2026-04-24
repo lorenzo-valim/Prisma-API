@@ -41,7 +41,7 @@ namespace ProjetoPrisma.Controllers
 
         // GET: api/Salas/{id}
         [HttpGet("{id}")]
-        public async Task<IActionResult> GetSala(int id)
+        public async Task<IActionResult> GetSala(Guid id)
         {
             var sala = await _appDbContext.Salas.FindAsync(id);
             if (sala == null)
@@ -54,7 +54,7 @@ namespace ProjetoPrisma.Controllers
 
         // PUT: api/Salas/{id}
         [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateSala(int id, Sala sala)
+        public async Task<IActionResult> UpdateSala(Guid id, Sala sala)
         {
             if (id != sala.Id)
             {
@@ -68,7 +68,7 @@ namespace ProjetoPrisma.Controllers
 
         // DELETE: api/Salas/{id}
         [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteSala(int id)
+        public async Task<IActionResult> DeleteSala(Guid id)
         {
             var sala = await _appDbContext.Salas.FindAsync(id);
             if (sala == null)

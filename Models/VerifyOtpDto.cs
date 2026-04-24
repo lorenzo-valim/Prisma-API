@@ -5,9 +5,9 @@ using System.Threading.Tasks;
 
 namespace ProjetoPrisma.Models
 {
-    public class LoginDto
+    public class VerifyOtpDto
     {
         public string Email { get; set; }
-        public string Password { get; set; }
+        public string Code { get; set; }
     }
 }

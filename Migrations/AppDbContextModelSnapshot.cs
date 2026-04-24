@@ -24,11 +24,9 @@ namespace ProjetoPrisma.Migrations
 
             modelBuilder.Entity("ProjetoPrisma.Models.Reserva", b =>
                 {
-                    b.Property<int>("Id")
+                    b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+                        .HasColumnType("binary(16)");
 
                     b.Property<DateTime>("DataReserva")
                         .HasColumnType("datetime(6)");
@@ -39,11 +37,11 @@ namespace ProjetoPrisma.Migrations
                     b.Property<TimeSpan>("HorarioInicio")
                         .HasColumnType("time(6)");
 
-                    b.Property<int>("SalaId")
-                        .HasColumnType("int");
+                    b.Property<Guid>("Id_Sala")
+                        .HasColumnType("binary(16)");
 
-                    b.Property<int>("UsuarioId")
-                        .HasColumnType("int");
+                    b.Property<Guid>("Id_Usuario")
+                        .HasColumnType("binary(16)");
 
                     b.HasKey("Id");
 
@@ -52,17 +50,16 @@ namespace ProjetoPrisma.Migrations
 
             modelBuilder.Entity("ProjetoPrisma.Models.Sala", b =>
                 {
-                    b.Property<int>("Id")
+                    b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+                        .HasColumnType("binary(16)");
 
                     b.Property<int>("Capacidade")
                         .HasColumnType("int");
 
-                    b.Property<bool>("Disponivel")
-                        .HasColumnType("tinyint(1)");
+                    b.Property<string>("Disponibilidade")
+                        .IsRequired()
+                        .HasColumnType("varchar(1)");
 
                     b.Property<string>("Nome")
                         .HasColumnType("longtext");
@@ -74,19 +71,33 @@ namespace ProjetoPrisma.Migrations
 
             modelBuilder.Entity("ProjetoPrisma.Models.Usuario", b =>
                 {
-                    b.Property<int>("Id")
+                    b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
+                        .HasColumnType("binary(16)");
 
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+                    b.Property<DateTime>("Criacao")
+                        .HasColumnType("datetime(6)");
 
-                    b.Property<string>("Login")
+                    b.Property<string>("Email")
                         .HasColumnType("longtext");
 
-                    b.Property<string>("Senha")
+                    b.Property<bool>("IsEmailVerified")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<string>("Nome")
                         .HasColumnType("longtext");
 
-                    b.Property<string>("Tipo_usuario")
+                    b.Property<string>("PasswordHash")
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("Tipo")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<DateTime?>("TokenExpiration")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<string>("VerificationToken")
                         .HasColumnType("longtext");
 
                     b.HasKey("Id");

@@ -1,13 +1,14 @@
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace ProjetoPrisma.Models
 {
-    public class LoginDto
+
+    public class UsuarioCreateDto
     {
+        public string Nome { get; set; }
         public string Email { get; set; }
         public string Password { get; set; }
+        public TipoUsuario Tipo { get; set; }
+     
     }
 }

@@ -7,9 +7,9 @@ namespace ProjetoPrisma.Models
 {
     public class Sala
     {
-        public int Id { get; set; }
+        public Guid Id { get; set; }
         public string Nome { get; set; }
         public int Capacidade { get; set; }
-        public bool Disponivel { get; set; }
+        public bool Disponibilidade { get; set; }
     }
 }
