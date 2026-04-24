@@ -5,13 +5,7 @@ using System.Threading.Tasks;
 
 namespace ProjetoPrisma.Models
 {
-    public enum StatusReserva
-    {
-        Ativa,
-        Cancelada
-    }
-
-    public class Reserva
+    public class Waitlist
     {
         public int Id { get; set; }
         public int UsuarioId { get; set; }
@@ -19,6 +13,6 @@ namespace ProjetoPrisma.Models
         public DateTime DataReserva { get; set; }
         public TimeSpan HorarioInicio { get; set; }
         public TimeSpan HorarioFim { get; set; }
-        public StatusReserva Status { get; set; } = StatusReserva.Ativa;
+        public DateTime DataSolicitacao { get; set; } // Para ordenar por quem pediu primeiro
     }
 }

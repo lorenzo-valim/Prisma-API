@@ -13,6 +13,7 @@ namespace ProjetoPrisma.Data
         public DbSet<Usuario> Usuarios { get; set; }
         public DbSet<Sala> Salas { get; set; }
         public DbSet<Reserva> Reservas { get; set; }
+        public DbSet<Waitlist> Waitlists { get; set; }
             
 
         
