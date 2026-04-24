@@ -1,0 +1,104 @@
+# =========================
+# Build results
+# =========================
+bin/
+obj/
+out/
+publish/
+
+# =========================
+# Visual Studio
+# =========================
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# =========================
+# VS Code
+# =========================
+.vscode/
+
+# =========================
+# Rider / JetBrains
+# =========================
+.idea/
+*.sln.iml
+
+# =========================
+# OS files
+# =========================
+.DS_Store
+Thumbs.db
+
+# =========================
+# Logs
+# =========================
+*.log
+
+# =========================
+# ASP.NET Core
+# =========================
+appsettings.Development.json
+appsettings.*.json
+
+# (Optional: keep base config tracked)
+!appsettings.json
+
+# =========================
+# Entity Framework
+# =========================
+Migrations/
+
+# (Optional: if you WANT migrations tracked, comment the line above)
+
+# =========================
+# NuGet
+# =========================
+*.nupkg
+*.snupkg
+.nuget/
+packages/
+
+# =========================
+# Dotnet CLI
+# =========================
+*.dotnet
+
+# =========================
+# Test results
+# =========================
+TestResults/
+*.trx
+*.coverage
+*.coveragexml
+
+# =========================
+# Publish profiles
+# =========================
+Properties/PublishProfiles/
+
+# =========================
+# Azure / Deployment
+# =========================
+*.PublishSettings
+
+# =========================
+# Temporary files
+# =========================
+*.tmp
+*.temp
+
+# =========================
+# Resharper
+# =========================
+_ReSharper*/
+*.DotSettings.user
+
+# =========================
+# Others
+# =========================
+*.cache
+*.pdb
+*.mdb
