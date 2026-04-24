@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+    <array name="cores_carregamento">
+        <item>@color/minha_cor_1</item>
+        <item>@color/minha_cor_2</item>
+        <item>@color/minha_cor_3</item>
+    </array>
+    <color name="minha_cor_1">#B39EB5</color>
+    <color name="minha_cor_2">#5D5A56</color>
+    <color name="minha_cor_3">#605088</color>
+</resources>
