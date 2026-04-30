@@ -63,7 +63,7 @@ class AgendamentoActivity : AppCompatActivity() {
                 Toast.makeText(this, "Agendamento realizado!", Toast.LENGTH_SHORT).show()
 
             } else {
-                Toast.makeText(this, "Por favor, selecione o uso da sala (Tag)", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "Por favor, selecione o uso da sala", Toast.LENGTH_SHORT).show()
             }
         }
     }
