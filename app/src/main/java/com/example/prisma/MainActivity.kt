@@ -50,7 +50,7 @@ class MainActivity : AppCompatActivity() {
             }
 
             if (validado) {
-                if (emailInserido == "luiscuzudo") {
+                if (emailInserido == "pedrogay") {
                     val intent = Intent(this, AdminActivity::class.java)
                     startActivity(intent)
                     finish()

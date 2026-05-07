@@ -34,6 +34,8 @@ class AgendamentoActivity : AppCompatActivity() {
         val tvListaVazia = findViewById<TextView>(R.id.tvListaVazia)
         val iconSair = findViewById<ImageView>(R.id.iconSair)
 
+        layoutConfirmacao.visibility = View.GONE
+
         findViewById<TextView>(R.id.tvNomeUsuario).text =
             "Olá, ${intent.getStringExtra("NOME_USUARIO") ?: "Usuário"}"
 
@@ -51,19 +53,30 @@ class AgendamentoActivity : AppCompatActivity() {
         btnConfirmar.setOnClickListener {
             val selectedChipId = chipGroup.checkedChipId
 
-            if (selectedChipId != View.NO_ID) {
+            if (dataFinalParaConfirmar.isEmpty() || horaFinalParaConfirmar.isEmpty()) {
+                Toast.makeText(this, "Escolha a data e o horário primeiro!", Toast.LENGTH_SHORT)
+                    .show()
+            } else if (selectedChipId == View.NO_ID) {
+                Toast.makeText(this, "Por favor, selecione o uso da sala", Toast.LENGTH_SHORT)
+                    .show()
+            } else {
                 val selectedChip = findViewById<Chip>(selectedChipId)
                 val textoDaTag = selectedChip.text.toString()
                 val resumoDataHora = "$dataFinalParaConfirmar às $horaFinalParaConfirmar"
 
-                adicionarCardAgendamento(containerHorarios, resumoDataHora, textoDaTag, tvListaVazia)
+                adicionarCardAgendamento(
+                    containerHorarios,
+                    resumoDataHora,
+                    textoDaTag,
+                    tvListaVazia
+                )
+
                 layoutConfirmacao.visibility = View.GONE
                 chipGroup.clearCheck()
+                dataFinalParaConfirmar = ""
+                horaFinalParaConfirmar = ""
 
                 Toast.makeText(this, "Agendamento realizado!", Toast.LENGTH_SHORT).show()
-
-            } else {
-                Toast.makeText(this, "Por favor, selecione o uso da sala", Toast.LENGTH_SHORT).show()
             }
         }
     }
@@ -96,9 +109,11 @@ class AgendamentoActivity : AppCompatActivity() {
                     horaFinalParaConfirmar = String.format("%02d:%02d", hora, minuto)
                     tvResumo.text =
                         "📅 Data: $dataFinalParaConfirmar\n⏰ Horário: $horaFinalParaConfirmar"
+
                     layout.visibility = View.VISIBLE
                 } else {
                     Toast.makeText(this, "Escolha entre 08h e 21h", Toast.LENGTH_SHORT).show()
+                    layout.visibility = View.GONE
                 }
             },
             cal.get(Calendar.HOUR_OF_DAY),
