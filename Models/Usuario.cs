@@ -24,6 +24,9 @@ namespace ProjetoPrisma.Models
 
         public bool IsEmailVerified { get; set; } = false;
         public string VerificationToken { get; set; }
+         public string VerificationTokenResetPassword { get; set; }
         public DateTime? TokenExpiration { get; set; }
+        public DateTime? TokenExpirationResetPassword { get; set; }
+
     }
 }
