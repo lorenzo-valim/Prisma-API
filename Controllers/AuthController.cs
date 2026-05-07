@@ -130,6 +130,7 @@ namespace ProjetoPrisma.Controllers
       [HttpPost("verify-otp")]
 public async Task<IActionResult> VerifyOtp([FromBody] VerifyOtpDto dto)
 {
+    
     // Busca o usuário pelo email
     var user = await _appDbContext.Usuarios.FirstOrDefaultAsync(u => u.Email == dto.Email);
 
@@ -147,6 +148,71 @@ public async Task<IActionResult> VerifyOtp([FromBody] VerifyOtpDto dto)
     await _appDbContext.SaveChangesAsync();
 
     return Ok("Conta verificada com sucesso!");
+}
+
+[HttpPost("send-otp-reset-password")]
+ public async Task<IActionResult> SendPasswordResetEmail([FromBody] ForgotPasswordDto dto)
+        {
+            // 1. Busca o usuário
+            var user = await _appDbContext.Usuarios.FirstOrDefaultAsync(u => u.Email == dto.Email);
+            if (user == null)
+            {
+                return BadRequest("Se o e-mail existir, um código de redefinição será enviado.");
+            }
+
+            // 2. Gera um código OTP seguro
+            string otpCode = GenerateSecureOtp();
+            int otpExpirationMinutes = _emailVerificationSettings.Value.OtpExpirationMinutes;
+
+            // 3. Salva o token e a expiração no banco
+            user.VerificationTokenResetPassword = otpCode;
+            user.TokenExpirationResetPassword = DateTime.UtcNow.AddMinutes(otpExpirationMinutes);
+            await _appDbContext.SaveChangesAsync();
+
+            // 4. Envia o e-mail com o código OTP
+            string subject = "Código de Redefinição de Senha Prisma";
+            string body = $"<h1>Redefinição de Senha</h1><p>Use o seguinte código para redefinir sua senha: <strong>{otpCode}</strong></p>";
+
+            bool emailSent = await _emailService.SendEmailAsync(user.Email, subject, body);
+
+            if (!emailSent)
+            {
+                return StatusCode(500, "Houve um erro ao enviar o email de redefinição.");
+            }
+
+            return Ok("Se o e-mail existir, um código de redefinição será enviado.");
+        }
+[HttpPost("reset-password")]
+public async Task<IActionResult> VerifyResetPassword([FromBody] ForgotPasswordDto dto)
+{
+    string otpCode = GenerateSecureOtp();
+    int otpExpirationMinutes = _emailVerificationSettings.Value.OtpExpirationMinutes;
+    // 1. Busca o usuário
+    var user = await _appDbContext.Usuarios.FirstOrDefaultAsync(u => u.Email == dto.Email);
+    
+    // 2. Validação genérica para evitar Enumeração de Usuários (não revela se o erro é no e-mail ou no código)
+    if (user == null || string.IsNullOrEmpty(user.VerificationTokenResetPassword) || user.VerificationTokenResetPassword != dto.Code) 
+    {
+        return BadRequest("Dados inválidos ou código incorreto.");
+    }
+    
+    // 3. Validação de expiração garantindo que a data não seja nula
+    if (!user.TokenExpirationResetPassword.HasValue || user.TokenExpirationResetPassword.Value < DateTime.UtcNow) 
+    {
+        return BadRequest("O código expirou. Por favor, solicite um novo.");
+    }
+
+    // 4. Atualiza a senha
+    user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.NewPassword);
+    
+    // 5. Invalida o token para evitar reúso
+    user.VerificationTokenResetPassword = null;
+    user.TokenExpirationResetPassword = null;
+
+    // 6. Salva no banco
+    await _appDbContext.SaveChangesAsync();
+
+    return Ok("Senha atualizada com sucesso!");
 }
 
     }
