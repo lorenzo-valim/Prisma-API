@@ -7,6 +7,7 @@ using ProjetoPrisma.Data;
 using ProjetoPrisma.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Internal;
+using GuerrillaNtp;
 
 namespace ProjetoPrisma.Controllers
 {
@@ -46,7 +47,7 @@ namespace ProjetoPrisma.Controllers
         public async Task<IActionResult> CreateReserva(Reserva reserva)
         {
             // Chama a função reutilizável
-            var erroValidacao = await ValidarIdsReservaAsync(reserva.Id_Sala, reserva.Id_Usuario);
+            var erroValidacao = await ValidarIdsReservaAsync(reserva.SalaId, reserva.UsuarioId);
 
             // O "if" agora só verifica se a função retornou algum erro
             if (erroValidacao != null)
@@ -132,7 +133,7 @@ namespace ProjetoPrisma.Controllers
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateReserva(Guid id, Reserva reserva)
         {
-            var erroValidacao = await ValidarIdsReservaAsync(reserva.Id_Sala, reserva.Id_Usuario);
+            var erroValidacao = await ValidarIdsReservaAsync(reserva.SalaId, reserva.UsuarioId);
 
             // O "if" agora só verifica se a função retornou algum erro
             if (erroValidacao != null)
@@ -170,7 +171,7 @@ namespace ProjetoPrisma.Controllers
 
  // DELETE: api/Reserva/{id}
         [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteReserva(int id)
+        public async Task<IActionResult> DeleteReserva(Guid id)
         {
             var reserva = await _appDbContext.Reservas.FindAsync(id);
             if (reserva == null)

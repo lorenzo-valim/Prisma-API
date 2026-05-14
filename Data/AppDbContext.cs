@@ -48,8 +48,8 @@ namespace ProjetoPrisma.Data
                 entity.Property(e => e.Id)
                     .HasColumnType("binary(16)")
                     .HasValueGenerator<Microsoft.EntityFrameworkCore.ValueGeneration.SequentialGuidValueGenerator>();
-                entity.Property(e => e.Id_Usuario).HasColumnType("binary(16)");
-                entity.Property(e => e.Id_Sala).HasColumnType("binary(16)");
+                entity.Property(e => e.UsuarioId).HasColumnType("binary(16)");
+                entity.Property(e => e.SalaId).HasColumnType("binary(16)");
 
 
             });
