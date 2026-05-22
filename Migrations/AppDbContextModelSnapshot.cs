@@ -37,10 +37,13 @@ namespace ProjetoPrisma.Migrations
                     b.Property<TimeSpan>("HorarioInicio")
                         .HasColumnType("time(6)");
 
-                    b.Property<Guid>("Id_Sala")
+                    b.Property<Guid>("SalaId")
                         .HasColumnType("binary(16)");
 
-                    b.Property<Guid>("Id_Usuario")
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("UsuarioId")
                         .HasColumnType("binary(16)");
 
                     b.HasKey("Id");
@@ -97,12 +100,48 @@ namespace ProjetoPrisma.Migrations
                     b.Property<DateTime?>("TokenExpiration")
                         .HasColumnType("datetime(6)");
 
+                    b.Property<DateTime?>("TokenExpirationResetPassword")
+                        .HasColumnType("datetime");
+
                     b.Property<string>("VerificationToken")
                         .HasColumnType("longtext");
+
+                    b.Property<string>("VerificationTokenResetPassword")
+                        .HasMaxLength(255)
+                        .HasColumnType("varchar(255)");
 
                     b.HasKey("Id");
 
                     b.ToTable("Usuarios");
+                });
+
+            modelBuilder.Entity("ProjetoPrisma.Models.Waitlist", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("binary(16)");
+
+                    b.Property<DateTime>("DataReserva")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<DateTime>("DataSolicitacao")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<TimeSpan>("HorarioFim")
+                        .HasColumnType("time(6)");
+
+                    b.Property<TimeSpan>("HorarioInicio")
+                        .HasColumnType("time(6)");
+
+                    b.Property<Guid>("SalaId")
+                        .HasColumnType("binary(16)");
+
+                    b.Property<Guid>("UsuarioId")
+                        .HasColumnType("binary(16)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Waitlists");
                 });
 #pragma warning restore 612, 618
         }

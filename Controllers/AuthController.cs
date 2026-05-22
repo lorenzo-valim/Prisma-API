@@ -151,7 +151,7 @@ public async Task<IActionResult> VerifyOtp([FromBody] VerifyOtpDto dto)
 }
 
 [HttpPost("send-otp-reset-password")]
- public async Task<IActionResult> SendPasswordResetEmail([FromBody] ForgotPasswordDto dto)
+ public async Task<IActionResult> SendPasswordResetEmail([FromBody] EmailResetPasswordDto dto)
         {
             // 1. Busca o usuário
             var user = await _appDbContext.Usuarios.FirstOrDefaultAsync(u => u.Email == dto.Email);
@@ -185,8 +185,6 @@ public async Task<IActionResult> VerifyOtp([FromBody] VerifyOtpDto dto)
 [HttpPost("reset-password")]
 public async Task<IActionResult> VerifyResetPassword([FromBody] ForgotPasswordDto dto)
 {
-    string otpCode = GenerateSecureOtp();
-    int otpExpirationMinutes = _emailVerificationSettings.Value.OtpExpirationMinutes;
     // 1. Busca o usuário
     var user = await _appDbContext.Usuarios.FirstOrDefaultAsync(u => u.Email == dto.Email);
     
