@@ -7,9 +7,9 @@ namespace ProjetoPrisma.Models
 {
     public class Waitlist
     {
-        public int Id { get; set; }
-        public int UsuarioId { get; set; }
-        public int SalaId { get; set; }
+        public Guid Id { get; set; }
+        public Guid UsuarioId { get; set; }
+        public Guid SalaId { get; set; }
         public DateTime DataReserva { get; set; }
         public TimeSpan HorarioInicio { get; set; }
         public TimeSpan HorarioFim { get; set; }

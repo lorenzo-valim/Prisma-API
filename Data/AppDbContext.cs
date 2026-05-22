@@ -26,8 +26,16 @@ namespace ProjetoPrisma.Data
                 entity.Property(e => e.Id)
                     .HasColumnType("binary(16)")
                     .HasValueGenerator<Microsoft.EntityFrameworkCore.ValueGeneration.SequentialGuidValueGenerator>();
-                    entity.Property(u => u.Tipo)
-                    .HasConversion<String>();
+                entity.Property(u => u.Tipo)
+                .HasConversion<String>();
+                
+                entity.Property(e => e.VerificationTokenResetPassword)
+        .HasMaxLength(255)
+        .IsRequired(false); // Permite NULL
+
+                entity.Property(e => e.TokenExpirationResetPassword)
+                    .HasColumnType("datetime")
+                    .IsRequired(false);
 
             });
 
