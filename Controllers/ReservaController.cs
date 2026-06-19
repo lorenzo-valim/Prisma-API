@@ -46,23 +46,30 @@ namespace ProjetoPrisma.Controllers
         [HttpPost]
         public async Task<IActionResult> CreateReserva(Reserva reserva)
         {
+
             // Chama a função reutilizável
             var erroValidacao = await ValidarIdsReservaAsync(reserva.SalaId, reserva.UsuarioId);
 
             // O "if" agora só verifica se a função retornou algum erro
             if (erroValidacao != null)
             {
+
                 return BadRequest(erroValidacao);
             }
 
-                       //Início da verificação da data da reserva utilizando o horário oficial do NTP
+
+            //Início da verificação da data da reserva utilizando o horário oficial do NTP
             try
             {
                 var ntp = new NtpClient("a.st1.ntp.br");
-                var ntpTime = await ntp.QueryAsync();
-                DateTime dataConfiavel = ntpTime.UtcNow.DateTime; 
+                DateTime ntpDateTimeUtc = ntp.QueryAsync().Result.UtcNow.DateTime;
+                TimeZoneInfo fusoBrasilia = TimeZoneInfo.FindSystemTimeZoneById("E. South America Standard Time");
+                // Converte o horário UTC para o horário de Brasília (GMT -3)
+                DateTime horarioBrasilia = TimeZoneInfo.ConvertTimeFromUtc(ntpDateTimeUtc, fusoBrasilia);
+                Console.WriteLine($"Horário de Brasília: {horarioBrasilia}");
 
-                if (reserva.DataReserva < dataConfiavel)
+                Console.WriteLine($"Data da reserva: {reserva.DataReserva}");
+                if ((reserva.HorarioInicio < horarioBrasilia.TimeOfDay) && (reserva.DataReserva.Date <= horarioBrasilia.Date))
                 {
                     return BadRequest("A data da reserva não pode ser no passado.");
                 }
@@ -77,7 +84,6 @@ namespace ProjetoPrisma.Controllers
             var conflito = await _appDbContext.Reservas.AnyAsync(r =>
                 r.SalaId == reserva.SalaId &&
                 r.DataReserva == reserva.DataReserva &&
-                r.Status == StatusReserva.Ativa &&
                 ((reserva.HorarioInicio < r.HorarioFim && reserva.HorarioFim > r.HorarioInicio) ||
                  (r.HorarioInicio < reserva.HorarioFim && r.HorarioFim > reserva.HorarioInicio)));
 
@@ -93,12 +99,12 @@ namespace ProjetoPrisma.Controllers
                     HorarioFim = reserva.HorarioFim,
                     DataSolicitacao = DateTime.UtcNow
                 };
-                _appDbContext.Waitlists.Add(waitlist);
+                _appDbContext.Waitlist.Add(waitlist);
                 await _appDbContext.SaveChangesAsync();
                 return Ok(new { Message = "Horário ocupado. Adicionado à lista de espera.", WaitlistId = waitlist.Id });
             }
 
-            reserva.Status = StatusReserva.Ativa;
+            reserva.StatusReserva = 1; // StatusReserva.Ativa
 
             _appDbContext.Reservas.Add(reserva);
             await _appDbContext.SaveChangesAsync();
@@ -130,7 +136,7 @@ namespace ProjetoPrisma.Controllers
         // final do GET por ID reserva
 
         // PUT: api/Reserva/{id}
-        [HttpPut("{id}")]
+        [HttpPut("put/{id}")]
         public async Task<IActionResult> UpdateReserva(Guid id, Reserva reserva)
         {
             var erroValidacao = await ValidarIdsReservaAsync(reserva.SalaId, reserva.UsuarioId);
@@ -145,12 +151,12 @@ namespace ProjetoPrisma.Controllers
                 return BadRequest("O ID da reserva não pode ser modificado.");
             }
 
-             //Início da verificação da data da reserva utilizando o horário oficial do NTP
+            //Início da verificação da data da reserva utilizando o horário oficial do NTP
             try
             {
                 var ntp = new NtpClient("a.st1.ntp.br");
                 var ntpTime = await ntp.QueryAsync();
-                DateTime dataConfiavel = ntpTime.UtcNow.DateTime; 
+                DateTime dataConfiavel = ntpTime.UtcNow.DateTime;
 
                 if (reserva.DataReserva < dataConfiavel)
                 {
@@ -169,8 +175,8 @@ namespace ProjetoPrisma.Controllers
         }
         // final do PUT
 
- // DELETE: api/Reserva/{id}
-        [HttpDelete("{id}")]
+        // DELETE: api/Reserva/{id}
+        [HttpDelete("del/{id}")]
         public async Task<IActionResult> DeleteReserva(Guid id)
         {
             var reserva = await _appDbContext.Reservas.FindAsync(id);
@@ -179,18 +185,18 @@ namespace ProjetoPrisma.Controllers
                 return NotFound();
             }
 
-            reserva.Status = StatusReserva.Cancelada;
+            reserva.StatusReserva = 0; // StatusReserva.Cancelada
             _appDbContext.Entry(reserva).State = EntityState.Modified;
             await _appDbContext.SaveChangesAsync();
 
             // Promover da lista de espera
-            var waitlistEntry = await _appDbContext.Waitlists
+            var waitlistEntry = await _appDbContext.Waitlist
                 .Where(w => w.SalaId == reserva.SalaId &&
-                            w.DataReserva == reserva.DataReserva &&
-                            w.HorarioInicio == reserva.HorarioInicio &&
-                            w.HorarioFim == reserva.HorarioFim)
+                            w.DataReserva == reserva.DataReserva && reserva.HorarioInicio < w.HorarioFim && reserva.HorarioFim > w.HorarioInicio ||
+                            (w.HorarioInicio < reserva.HorarioFim && w.HorarioFim > reserva.HorarioInicio))
                 .OrderBy(w => w.DataSolicitacao)
                 .FirstOrDefaultAsync();
+
 
             if (waitlistEntry != null)
             {
@@ -202,13 +208,14 @@ namespace ProjetoPrisma.Controllers
                     DataReserva = waitlistEntry.DataReserva,
                     HorarioInicio = waitlistEntry.HorarioInicio,
                     HorarioFim = waitlistEntry.HorarioFim,
-                    Status = StatusReserva.Ativa
+                    StatusReserva = 1 // StatusReserva.Ativa
                 };
                 _appDbContext.Reservas.Add(novaReserva);
-                _appDbContext.Waitlists.Remove(waitlistEntry);
+                _appDbContext.Waitlist.Remove(waitlistEntry);
                 await _appDbContext.SaveChangesAsync();
             }
-
+            _appDbContext.Reservas.Remove(reserva);
+            await _appDbContext.SaveChangesAsync();
             return Ok(reserva);
         }
         // final do DELETE
@@ -233,12 +240,29 @@ namespace ProjetoPrisma.Controllers
         [HttpGet("waitlist")]
         public async Task<IActionResult> GetWaitlist()
         {
-            var waitlist = await _appDbContext.Waitlists
+            var waitlist = await _appDbContext.Waitlist
                 .OrderBy(w => w.DataSolicitacao)
                 .ToListAsync();
             return Ok(waitlist);
         }
         // final do GET waitlist
 
+        [HttpGet("horario")]
+        public IActionResult ObterHorarioServidor()
+        {
+            try
+            {
+                var ntp = new NtpClient("a.st1.ntp.br");
+                DateTime ntpDateTimeUtc = ntp.QueryAsync().Result.UtcNow.DateTime;
+                TimeZoneInfo fusoBrasilia = TimeZoneInfo.FindSystemTimeZoneById("E. South America Standard Time");
+                // Converte o horário UTC para o horário de Brasília (GMT -3)
+                DateTime horarioBrasilia = TimeZoneInfo.ConvertTimeFromUtc(ntpDateTimeUtc, fusoBrasilia);
+                return Ok(new { horarioBrasilia = horarioBrasilia.ToString("yyyy-MM-ddTHH:mm:ss") });
+            }
+            catch (Exception)
+            {
+                return StatusCode(503, "Não foi possível validar o horário oficial.");
+            }
+        }
     }
 }
