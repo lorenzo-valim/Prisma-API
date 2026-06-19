@@ -19,6 +19,6 @@ namespace ProjetoPrisma.Models
         public DateTime DataReserva { get; set; }
         public TimeSpan HorarioInicio { get; set; }
         public TimeSpan HorarioFim { get; set; }
-        public StatusReserva Status { get; set; } = StatusReserva.Ativa;
+        public int StatusReserva { get; set; }
     }
 }

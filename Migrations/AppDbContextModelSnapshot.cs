@@ -40,7 +40,7 @@ namespace ProjetoPrisma.Migrations
                     b.Property<Guid>("SalaId")
                         .HasColumnType("binary(16)");
 
-                    b.Property<int>("Status")
+                    b.Property<int>("StatusReserva")
                         .HasColumnType("int");
 
                     b.Property<Guid>("UsuarioId")
@@ -60,9 +60,8 @@ namespace ProjetoPrisma.Migrations
                     b.Property<int>("Capacidade")
                         .HasColumnType("int");
 
-                    b.Property<string>("Disponibilidade")
-                        .IsRequired()
-                        .HasColumnType("varchar(1)");
+                    b.Property<bool>("Disponibilidade")
+                        .HasColumnType("tinyint(1)");
 
                     b.Property<string>("Nome")
                         .HasColumnType("longtext");
@@ -141,7 +140,7 @@ namespace ProjetoPrisma.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Waitlists");
+                    b.ToTable("Waitlist");
                 });
 #pragma warning restore 612, 618
         }

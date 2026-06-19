@@ -1,6 +1,7 @@
 // Arquivo: Program.cs — substitua o seu pelo este (adiciona CORS para o React)
 
 using Microsoft.EntityFrameworkCore;
+using Microsoft.OpenApi;
 using ProjetoPrisma.Data;
 using ProjetoPrisma.Models;
 using ProjetoPrisma.Services;
@@ -33,6 +34,11 @@ builder.Services.AddCors(options =>
             .AllowAnyMethod();
     });
 });
+builder.Services.AddSwaggerGen(c =>
+{
+    c.SwaggerDoc("v1", new OpenApiInfo { Title = "Minha API", Version = "v1" });
+});
+// O Swashbuckle gera o JSON com o campo "openapi" automaticamente.
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 builder.Services.AddDbContext<AppDbContext>(options =>
@@ -45,6 +51,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+
 
 app.UseForwardedHeaders();
 
