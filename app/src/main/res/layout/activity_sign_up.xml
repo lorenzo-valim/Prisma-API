@@ -42,11 +42,26 @@
                 android:textColor="#616161" />
 
             <LinearLayout
-                android:id="@+id/layoutEtapaConta"
+                android:id="@+id/layoutEtapaDados"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
                 android:visibility="visible">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Nome Completo"
+                    android:textStyle="bold" />
+                <EditText
+                    android:id="@+id/etNovoNome"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/input_background"
+                    android:hint="Seu nome"
+                    android:inputType="textPersonName"
+                    android:padding="12dp"
+                    android:layout_marginBottom="12dp"/>
 
                 <TextView
                     android:layout_width="wrap_content"
@@ -79,7 +94,7 @@
             </LinearLayout>
 
             <LinearLayout
-                android:id="@+id/layoutEtapaPerfil"
+                android:id="@+id/layoutEtapaCodigo"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
@@ -88,32 +103,33 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Nome Completo"
-                    android:textStyle="bold" />
-                <EditText
-                    android:id="@+id/etNovoNome"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:background="@drawable/input_background"
-                    android:hint="Digite seu nome"
-                    android:inputType="textPersonName"
-                    android:padding="12dp"
-                    android:layout_marginBottom="12dp"/>
+                    android:layout_gravity="center_horizontal"
+                    android:text="Verifique seu e-mail"
+                    android:textColor="#6A1B9A"
+                    android:textStyle="bold"
+                    android:textSize="18sp" />
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Data de Nascimento"
-                    android:textStyle="bold" />
+                    android:layout_gravity="center_horizontal"
+                    android:text="Digite o código de 6 dígitos enviado"
+                    android:textSize="14sp"
+                    android:layout_marginBottom="20dp" />
+
                 <EditText
-                    android:id="@+id/etNascimento"
+                    android:id="@+id/etCodigoVerificacao"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:background="@drawable/input_background"
-                    android:hint="DD/MM/AAAA"
+                    android:gravity="center"
+                    android:hint="000000"
                     android:inputType="number"
-                    android:maxLength="10"
-                    android:padding="12dp" />
+                    android:maxLength="6"
+                    android:letterSpacing="0.8"
+                    android:padding="16dp"
+                    android:textSize="32sp"
+                    android:textStyle="bold" />
             </LinearLayout>
 
             <androidx.appcompat.widget.AppCompatButton

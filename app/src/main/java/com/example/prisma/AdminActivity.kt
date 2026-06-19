@@ -72,7 +72,7 @@ class AdminActivity : AppCompatActivity() {
 
         val btnAprovar = ImageButton(this).apply {
 
-            setImageResource(android.R.drawable.checkbox_on_background)
+
             background = null
             setColorFilter(Color.parseColor("#4CAF50"))
             setPadding(20, 20, 20, 20)

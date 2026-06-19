@@ -1,11 +1,14 @@
 package com.example.prisma
 
 import android.os.Bundle
-import android.text.Editable
-import android.text.TextWatcher
 import android.view.View
 import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
+import com.example.prisma.back.*
+import okhttp3.ResponseBody
+import retrofit2.Call
+import retrofit2.Callback
+import retrofit2.Response
 
 class SignUpActivity : AppCompatActivity() {
 
@@ -15,82 +18,85 @@ class SignUpActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_sign_up)
 
-        val layoutConta = findViewById<LinearLayout>(R.id.layoutEtapaConta)
-        val layoutPerfil = findViewById<LinearLayout>(R.id.layoutEtapaPerfil)
+        val layoutEtapaDados = findViewById<LinearLayout>(R.id.layoutEtapaDados)
+        val layoutEtapaCodigo = findViewById<LinearLayout>(R.id.layoutEtapaCodigo)
         val btnProximo = findViewById<Button>(R.id.btnProximo)
         val tvPasso = findViewById<TextView>(R.id.tvPasso)
+
+        val etNovoNome = findViewById<EditText>(R.id.etNovoNome)
         val etNovoEmail = findViewById<EditText>(R.id.etNovoEmail)
         val etNovaSenha = findViewById<EditText>(R.id.etNovaSenha)
-        val etNovoNome = findViewById<EditText>(R.id.etNovoNome)
-        val etNascimento = findViewById<EditText>(R.id.etNascimento)
-
-        etNascimento.addTextChangedListener(object : TextWatcher {
-            private var isUpdating = false
-            private val mask = "##/##/####"
-            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
-            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
-                val str = s.toString().replace(Regex("[^\\d]"), "")
-                var result = ""
-                if (isUpdating) { isUpdating = false; return }
-                var i = 0
-                for (m in mask.toCharArray()) {
-                    if (m != '#') { if (str.length > i) result += m; continue }
-                    try { result += str[i] } catch (e: Exception) { break }
-                    i++
-                }
-                isUpdating = true
-                etNascimento.setText(result)
-                etNascimento.setSelection(result.length)
-            }
-            override fun afterTextChanged(s: Editable?) {}
-        })
+        val etCodigoVerificacao = findViewById<EditText>(R.id.etCodigoVerificacao)
 
         btnProximo.setOnClickListener {
             if (passoAtual == 1) {
+                val nome = etNovoNome.text.toString().trim()
                 val email = etNovoEmail.text.toString().trim()
                 val senha = etNovaSenha.text.toString().trim()
 
-                etNovoEmail.error = null
-                etNovaSenha.error = null
+                if (validarPasso1(nome, email, senha, etNovoNome, etNovoEmail, etNovaSenha)) {
 
-                if (email.isEmpty()) {
-                    etNovoEmail.error = "O e-mail é obrigatório"
-                    etNovoEmail.requestFocus()
-                } else if (senha.isEmpty()) {
-                    etNovaSenha.error = "A senha é obrigatória"
-                    etNovaSenha.requestFocus()
-                } else if (senha.length < 6) {
-                    etNovaSenha.error = "A senha deve ter pelo menos 6 caracteres"
-                    etNovaSenha.requestFocus()
-                } else {
-                    layoutConta.visibility = View.GONE
-                    layoutPerfil.visibility = View.VISIBLE
-                    tvPasso.text = "Passo 2 de 2"
-                    btnProximo.text = "Finalizar Cadastro"
-                    passoAtual = 2
+                    val request = RegisterRequest(nome, email, senha, tipo = 1)
+
+                    RetrofitClient.instance.registrar(request).enqueue(object : Callback<ResponseBody> {
+                        override fun onResponse(call: Call<ResponseBody>, response: Response<ResponseBody>) {
+                            if (response.isSuccessful) {
+                                layoutEtapaDados.visibility = View.GONE
+                                layoutEtapaCodigo.visibility = View.VISIBLE
+                                tvPasso.text = "Passo 2 de 2"
+                                btnProximo.text = "Confirmar Código"
+                                passoAtual = 2
+                            } else {
+                                val erro = response.errorBody()?.string() ?: "Erro no cadastro"
+                                Toast.makeText(this@SignUpActivity, erro, Toast.LENGTH_SHORT).show()
+                            }
+                        }
+
+                        override fun onFailure(call: Call<ResponseBody>, t: Throwable) {
+                            Toast.makeText(this@SignUpActivity, "Falha na conexão: ${t.message}", Toast.LENGTH_SHORT).show()
+                        }
+                    })
                 }
 
             } else {
-                val nome = etNovoNome.text.toString().trim()
-                val data = etNascimento.text.toString().trim()
+                val codigo = etCodigoVerificacao.text.toString().trim()
+                val email = etNovoEmail.text.toString().trim()
 
-                etNovoNome.error = null
-                etNascimento.error = null
+                if (codigo.length == 6) {
 
-                if (nome.isEmpty()) {
-                    etNovoNome.error = "O nome é obrigatório"
-                    etNovoNome.requestFocus()
-                } else if (data.isEmpty()) {
-                    etNascimento.error = "A data de nascimento é obrigatória"
-                    etNascimento.requestFocus()
-                } else if (data.length < 10) {
-                    etNascimento.error = "Formato inválido: DD/MM/AAAA"
-                    etNascimento.requestFocus()
+                    val requestOtp = VerifyOtpRequest(email, codigo)
+
+                    RetrofitClient.instance.verificarOtp(requestOtp).enqueue(object : Callback<ResponseBody> {
+                        override fun onResponse(call: Call<ResponseBody>, response: Response<ResponseBody>) {
+                            if (response.isSuccessful) {
+                                Toast.makeText(this@SignUpActivity, "Conta ativada!", Toast.LENGTH_LONG).show()
+                                finish()
+                            } else {
+                                val erro = response.errorBody()?.string() ?: "Código inválido"
+                                etCodigoVerificacao.error = erro
+                            }
+                        }
+
+                        override fun onFailure(call: Call<ResponseBody>, t: Throwable) {
+                            Toast.makeText(this@SignUpActivity, "Erro de rede", Toast.LENGTH_SHORT).show()
+                        }
+                    })
                 } else {
-                    Toast.makeText(this, "Bem-vindo ao Prisma, $nome!", Toast.LENGTH_LONG).show()
-                    finish()
+                    etCodigoVerificacao.error = "Digite os 6 dígitos"
                 }
             }
+        }
+    }
+    private fun validarPasso1(nome: String, email: String, senha: String, etNome: EditText, etEmail: EditText, etSenha: EditText): Boolean {
+        etNome.error = null
+        etEmail.error = null
+        etSenha.error = null
+
+        return when {
+            nome.isEmpty() -> { etNome.error = "Nome obrigatório"; false }
+            email.isEmpty() -> { etEmail.error = "E-mail obrigatório"; false }
+            senha.length < 6 -> { etSenha.error = "Mínimo 6 caracteres"; false }
+            else -> true
         }
     }
 }
