@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
@@ -16,12 +17,12 @@
         app:layout_constraintTop_toTopOf="parent">
 
         <LinearLayout
+            android:id="@+id/layoutEtapaEmail"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
             android:padding="24dp"
-            android:id="@+id/etDigitarEmail"
-            >
+            android:visibility="visible">
 
             <TextView
                 android:layout_width="wrap_content"
@@ -37,7 +38,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="30dp"
-                android:text="Digite seu e-mail para receber as instruções de recuperação."
+                android:text="Digite seu e-mail para receber o código de verificação."
                 android:textAlignment="center" />
 
             <EditText
@@ -50,57 +51,105 @@
                 android:padding="15dp" />
 
             <androidx.appcompat.widget.AppCompatButton
-                android:id="@+id/btnEnviarLink"
+                android:id="@+id/btnEnviarCodigo"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="20dp"
                 android:background="@drawable/button_background"
-                android:text="Enviar Link"
+                android:text="Enviar Código"
                 android:textColor="#FFFFFF" />
-
         </LinearLayout>
 
         <LinearLayout
-            android:id="@+id/etLinkEnviado"
+            android:id="@+id/layoutEtapaCodigo"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
             android:padding="24dp"
-            android:gravity="center"
             android:visibility="gone">
 
             <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Tudo pronto!"
-            android:textColor="#6200ee"
-            android:textSize="22sp"
-            android:textStyle="bold"
-            android:layout_marginBottom="4dp" />
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:layout_marginBottom="10dp"
+                android:text="Validar Código"
+                android:textColor="#6200ee"
+                android:textSize="24sp"
+                android:textStyle="bold" />
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="O link de recuperação já foi enviado!"
-                android:textColor="#757575"
-                android:textSize="16sp"
+                android:layout_marginBottom="30dp"
+                android:text="Insira o código de 6 dígitos enviado ao seu e-mail."
                 android:textAlignment="center" />
 
-            <TextView
-                android:layout_width="wrap_content"
+            <EditText
+                android:id="@+id/etCodigoOtp"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Verifique seu e-mail"
-                android:textColor="#757575"
-                android:textSize="16sp"
-                android:textAlignment="center" />
+                android:background="@android:drawable/editbox_background"
+                android:hint="000000"
+                android:gravity="center"
+                android:maxLength="6"
+                android:inputType="number"
+                android:padding="15dp" />
 
             <androidx.appcompat.widget.AppCompatButton
-                android:id="@+id/btnVoltarParaMain"
+                android:id="@+id/btnValidarCodigo"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="20dp"
                 android:background="@drawable/button_background"
-                android:text="Voltar para o Login"
+                android:text="Validar"
+                android:textColor="#FFFFFF" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/layoutEtapaNovaSenha"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="24dp"
+            android:visibility="gone">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:layout_marginBottom="10dp"
+                android:text="Nova Senha"
+                android:textColor="#6200ee"
+                android:textSize="24sp"
+                android:textStyle="bold" />
+
+            <EditText
+                android:id="@+id/etNovaSenhaRecuperar"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="15dp"
+                android:background="@android:drawable/editbox_background"
+                android:hint="Nova senha"
+                android:inputType="textPassword"
+                android:padding="15dp" />
+
+            <EditText
+                android:id="@+id/etConfirmarNovaSenha"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@android:drawable/editbox_background"
+                android:hint="Confirmar nova senha"
+                android:inputType="textPassword"
+                android:padding="15dp" />
+
+            <androidx.appcompat.widget.AppCompatButton
+                android:id="@+id/btnFinalizarTroca"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="20dp"
+                android:background="@drawable/button_background"
+                android:text="Redefinir Senha"
                 android:textColor="#FFFFFF" />
         </LinearLayout>
 

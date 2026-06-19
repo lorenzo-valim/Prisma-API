@@ -1,5 +1,6 @@
 package com.example.prisma
 
+
 import android.content.Intent
 import android.os.Bundle
 import android.view.View
@@ -7,6 +8,9 @@ import android.widget.Button
 import android.widget.EditText
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
+import com.example.prisma.back.LoginRequest
+import com.example.prisma.back.LoginResponse
+import com.example.prisma.back.RetrofitClient
 
 class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -25,7 +29,8 @@ class MainActivity : AppCompatActivity() {
         }
 
         tvEsqueciSenha.setOnClickListener {
-            startActivity(Intent(this, RecuperarSenhaActivity::class.java))
+            val intent = Intent(this, RecuperarSenhaActivity::class.java)
+            startActivity(intent)
         }
 
         botaoEntrar.setOnClickListener {
@@ -50,22 +55,59 @@ class MainActivity : AppCompatActivity() {
             }
 
             if (validado) {
-                if (emailInserido == "pedrogay") {
-                    val intent = Intent(this, AdminActivity::class.java)
-                    startActivity(intent)
-                    finish()
-                } else {
-                    val nomeParaMostrar = if (emailInserido.contains("@")) {
-                        emailInserido.split("@")[0].replace(".", " ").replaceFirstChar { it.uppercase() }
-                    } else {
-                        emailInserido.replaceFirstChar { it.uppercase() }
-                    }
 
-                    val intent = Intent(this, LoadingActivity::class.java)
-                    intent.putExtra("NOME_USUARIO", nomeParaMostrar)
-                    startActivity(intent)
-                    finish()
-                }
+                val loginRequest = LoginRequest(emailInserido, senhaInserida)
+
+                RetrofitClient.instance.login(loginRequest)
+                    .enqueue(object : retrofit2.Callback<LoginResponse> {
+                        override fun onResponse(
+                            call: retrofit2.Call<LoginResponse>,
+                            response: retrofit2.Response<LoginResponse>
+                        ) {
+                            if (response.isSuccessful) {
+                                val loginResponse = response.body()
+
+                                val sharedPreferences =
+                                    getSharedPreferences("PrismaPrefs", MODE_PRIVATE)
+                                sharedPreferences.edit()
+                                    .putString("USER_ID", loginResponse?.id)
+                                    .putString("USER_EMAIL", loginResponse?.email)
+                                    .apply()
+
+
+                                if (emailInserido == "admin") {
+                                    startActivity(
+                                        Intent(
+                                            this@MainActivity,
+                                            AdminActivity::class.java
+                                        )
+                                    )
+                                } else {
+                                    val intent =
+                                        Intent(this@MainActivity, LoadingActivity::class.java)
+                                    intent.putExtra(
+                                        "NOME_USUARIO",
+                                        loginResponse?.message?.replace("Bem-vindo, ", "")
+                                            ?.replace("!", "")
+                                    )
+                                    startActivity(intent)
+                                }
+                                finish()
+
+                            } else if (response.code() == 401) {
+                                tvErroSenha.text = "E-mail ou senha incorretos"
+                                tvErroSenha.visibility = View.VISIBLE
+                            } else {
+                                tvErroEmail.text = "Erro no servidor. Tente novamente."
+                                tvErroEmail.visibility = View.VISIBLE
+                            }
+                        }
+
+                        override fun onFailure(call: retrofit2.Call<LoginResponse>, t: Throwable) {
+                            tvErroEmail.text = "Sem conexão com a internet ou API fora do ar"
+                            tvErroEmail.visibility = View.VISIBLE
+                        }
+                    })
             }
         }
     }

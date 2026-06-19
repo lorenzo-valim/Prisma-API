@@ -11,15 +11,24 @@ import android.view.Gravity
 import android.view.View
 import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
+import com.example.prisma.back.*
 import com.google.android.material.card.MaterialCardView
 import com.google.android.material.chip.Chip
 import com.google.android.material.chip.ChipGroup
+import retrofit2.Call
+import retrofit2.Callback
+import retrofit2.Response
+import java.text.SimpleDateFormat
 import java.util.Calendar
+import java.util.Locale
 
 class AgendamentoActivity : AppCompatActivity() {
 
     private var dataFinalParaConfirmar = ""
-    private var horaFinalParaConfirmar = ""
+    private var horaInicioParaConfirmar = ""
+    private var horaFimParaConfirmar = ""
+    private var listaSalas = listOf<SalaResponse>()
+    private var salaSelecionadaId: String = ""
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -33,11 +42,17 @@ class AgendamentoActivity : AppCompatActivity() {
         val containerHorarios = findViewById<LinearLayout>(R.id.containerHorarios)
         val tvListaVazia = findViewById<TextView>(R.id.tvListaVazia)
         val iconSair = findViewById<ImageView>(R.id.iconSair)
+        val spinnerSalas = findViewById<Spinner>(R.id.spinnerSalas)
+        val iconRefresh = findViewById<ImageView>(R.id.iconRefresh)
 
         layoutConfirmacao.visibility = View.GONE
 
         findViewById<TextView>(R.id.tvNomeUsuario).text =
             "Olá, ${intent.getStringExtra("NOME_USUARIO") ?: "Usuário"}"
+
+        // Carrega os dados iniciais da API
+        carregarSalas(spinnerSalas)
+        carregarDadosCompletosDoUsuario(containerHorarios, tvListaVazia)
 
         iconSair.setOnClickListener {
             val intent = Intent(this, MainActivity::class.java)
@@ -46,43 +61,170 @@ class AgendamentoActivity : AppCompatActivity() {
             finish()
         }
 
+        // 🔄 Botão de Atualizar Manual: limpa as variáveis e fecha o quadro roxo
+        iconRefresh.setOnClickListener {
+            Toast.makeText(this, "Atualizando agendamentos...", Toast.LENGTH_SHORT).show()
+
+            carregarSalas(spinnerSalas)
+            carregarDadosCompletosDoUsuario(containerHorarios, tvListaVazia)
+            fecharEResetarPainelAgendamento(layoutConfirmacao, chipGroup)
+        }
+
+        // 📅 Abre o fluxo de agendamento (Calendário -> Relógio Início -> Relógio Fim)
         btnNovoAgendamento.setOnClickListener {
-            abrirCalendario(tvResumoTexto, layoutConfirmacao)
+            buscarDataApiEAbrirCalendario(tvResumoTexto, layoutConfirmacao)
         }
 
         btnConfirmar.setOnClickListener {
             val selectedChipId = chipGroup.checkedChipId
 
-            if (dataFinalParaConfirmar.isEmpty() || horaFinalParaConfirmar.isEmpty()) {
-                Toast.makeText(this, "Escolha a data e o horário primeiro!", Toast.LENGTH_SHORT)
-                    .show()
+            if (dataFinalParaConfirmar.isEmpty() || horaInicioParaConfirmar.isEmpty() || horaFimParaConfirmar.isEmpty() || salaSelecionadaId.isEmpty()) {
+                Toast.makeText(this, "Preencha todos os campos!", Toast.LENGTH_SHORT).show()
             } else if (selectedChipId == View.NO_ID) {
-                Toast.makeText(this, "Por favor, selecione o uso da sala", Toast.LENGTH_SHORT)
-                    .show()
+                Toast.makeText(this, "Selecione o motivo do uso", Toast.LENGTH_SHORT).show()
             } else {
                 val selectedChip = findViewById<Chip>(selectedChipId)
-                val textoDaTag = selectedChip.text.toString()
-                val resumoDataHora = "$dataFinalParaConfirmar às $horaFinalParaConfirmar"
+                val usoSala = selectedChip.text.toString()
 
-                adicionarCardAgendamento(
+                executarReservaNaApi(
+                    usoSala,
                     containerHorarios,
-                    resumoDataHora,
-                    textoDaTag,
-                    tvListaVazia
+                    tvListaVazia,
+                    layoutConfirmacao,
+                    chipGroup
                 )
-
-                layoutConfirmacao.visibility = View.GONE
-                chipGroup.clearCheck()
-                dataFinalParaConfirmar = ""
-                horaFinalParaConfirmar = ""
-
-                Toast.makeText(this, "Agendamento realizado!", Toast.LENGTH_SHORT).show()
             }
         }
     }
 
-    private fun abrirCalendario(tvResumo: TextView, layout: View) {
-        val cal = Calendar.getInstance()
+    // 🧹 Função utilitária para fechar o bloco roxo e limpar os dados inseridos
+    private fun fecharEResetarPainelAgendamento(layout: View, chipGroup: ChipGroup) {
+        layout.visibility = View.GONE
+        chipGroup.clearCheck()
+        dataFinalParaConfirmar = ""
+        horaInicioParaConfirmar = ""
+        horaFimParaConfirmar = ""
+    }
+
+    private fun carregarSalas(spinner: Spinner) {
+        RetrofitClient.instance.listarSalas().enqueue(object : Callback<List<SalaResponse>> {
+            override fun onResponse(call: Call<List<SalaResponse>>, response: Response<List<SalaResponse>>) {
+                if (response.isSuccessful) {
+                    listaSalas = response.body() ?: emptyList()
+                    if (listaSalas.isNotEmpty()) {
+                        salaSelecionadaId = listaSalas[0].id
+                        val nomes = listaSalas.map { "${it.nome} (Cap: ${it.capacidade})" }
+                        val adapter = ArrayAdapter(this@AgendamentoActivity, android.R.layout.simple_spinner_item, nomes)
+                        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+                        spinner.adapter = adapter
+
+                        spinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+                            override fun onItemSelected(p0: AdapterView<*>?, p1: View?, pos: Int, p3: Long) {
+                                salaSelecionadaId = listaSalas[pos].id
+                            }
+                            override fun onNothingSelected(p0: AdapterView<*>?) {}
+                        }
+                    }
+                }
+            }
+            override fun onFailure(call: Call<List<SalaResponse>>, t: Throwable) {}
+        })
+    }
+
+    private fun carregarDadosCompletosDoUsuario(container: LinearLayout, tvVazio: TextView) {
+        val userId = getSharedPreferences("PrismaPrefs", MODE_PRIVATE).getString("USER_ID", "") ?: ""
+        if (userId.isEmpty()) return
+
+        container.removeAllViews()
+        var totalItensAdicionados = 0
+
+        // 1ª Chamada: Buscar Reservas Normais
+        RetrofitClient.instance.listarReservas().enqueue(object : Callback<List<ReservaResponse>> {
+            override fun onResponse(call: Call<List<ReservaResponse>>, response: Response<List<ReservaResponse>>) {
+                if (response.isSuccessful) {
+                    val todasReservas = response.body() ?: emptyList()
+                    val minhasReservas = todasReservas.filter { (it.usuarioId ?: "").equals(userId, ignoreCase = true) }
+
+                    minhasReservas.forEach { reserva ->
+                        val dataReserva = reserva.dataReserva ?: ""
+                        val horarioInicio = reserva.horarioInicio ?: "00:00"
+                        val horarioFim = reserva.horarioFim ?: "00:00"
+                        val reservaId = reserva.id ?: ""
+
+                        val dataFormatada = if (dataReserva.contains("T")) dataReserva.split("T")[0] else dataReserva
+                        val horarioInfo = "$dataFormatada ($horarioInicio - $horarioFim)"
+
+                        adicionarCardAgendamento(container, horarioInfo, "Reserva (Confirmado)", tvVazio, reservaId)
+                        totalItensAdicionados++
+                    }
+                }
+                atualizarVisibilidadeTextoVazio(totalItensAdicionados, tvVazio)
+            }
+            override fun onFailure(call: Call<List<ReservaResponse>>, t: Throwable) {
+                Toast.makeText(this@AgendamentoActivity, "Erro ao carregar reservas", Toast.LENGTH_SHORT).show()
+            }
+        })
+
+        // 2ª Chamada: Buscar os agendamentos na Fila de Espera (Waitlist)
+        RetrofitClient.instance.listarWaitlist().enqueue(object : Callback<List<WaitlistResponse>> {
+            override fun onResponse(call: Call<List<WaitlistResponse>>, response: Response<List<WaitlistResponse>>) {
+                if (response.isSuccessful) {
+                    val todaWaitlist = response.body() ?: emptyList()
+                    val minhaWaitlist = todaWaitlist.filter { (it.usuarioId ?: "").equals(userId, ignoreCase = true) }
+
+                    minhaWaitlist.forEach { itemFila ->
+                        val dataReserva = itemFila.dataReserva ?: ""
+                        val horarioInicio = itemFila.horarioInicio ?: "00:00"
+                        val horarioFim = itemFila.horarioFim ?: "00:00"
+                        val waitlistId = itemFila.id
+
+                        val dataFormatada = if (dataReserva.contains("T")) dataReserva.split("T")[0] else dataReserva
+                        val horarioInfo = "$dataFormatada ($horarioInicio - $horarioFim)"
+
+                        adicionarCardAgendamento(container, horarioInfo, "Fila de Espera", tvVazio, waitlistId)
+                        totalItensAdicionados++
+                    }
+                }
+                atualizarVisibilidadeTextoVazio(totalItensAdicionados, tvVazio)
+            }
+            override fun onFailure(call: Call<List<WaitlistResponse>>, t: Throwable) {}
+        })
+    }
+
+    private fun atualizarVisibilidadeTextoVazio(total: Int, tvVazio: TextView) {
+        if (total == 0) {
+            tvVazio.visibility = View.VISIBLE
+        } else {
+            tvVazio.visibility = View.GONE
+        }
+    }
+
+    private fun buscarDataApiEAbrirCalendario(tvResumo: TextView, layout: View) {
+        RetrofitClient.instance.obterHorarioServidor().enqueue(object : Callback<HorarioResponse> {
+            override fun onResponse(call: Call<HorarioResponse>, response: Response<HorarioResponse>) {
+                if (response.isSuccessful && response.body() != null) {
+                    val dataApi = response.body()?.horarioBrasilia ?: ""
+                    try {
+                        val formato = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault())
+                        val date = formato.parse(dataApi)
+                        val calServidor = Calendar.getInstance()
+                        if (date != null) calServidor.time = date
+
+                        abrirCalendario(tvResumo, layout, calServidor)
+                    } catch (e: Exception) {
+                        abrirCalendario(tvResumo, layout, Calendar.getInstance())
+                    }
+                } else {
+                    abrirCalendario(tvResumo, layout, Calendar.getInstance())
+                }
+            }
+            override fun onFailure(call: Call<HorarioResponse>, t: Throwable) {
+                abrirCalendario(tvResumo, layout, Calendar.getInstance())
+            }
+        })
+    }
+
+    private fun abrirCalendario(tvResumo: TextView, layout: View, dataBase: Calendar) {
         val dpd = DatePickerDialog(this, { _, ano, mes, dia ->
             val calSelecao = Calendar.getInstance()
             calSelecao.set(ano, mes, dia)
@@ -91,45 +233,102 @@ class AgendamentoActivity : AppCompatActivity() {
                 Toast.makeText(this, "Não atendemos aos domingos!", Toast.LENGTH_SHORT).show()
             } else {
                 dataFinalParaConfirmar = String.format("%02d/%02d/%d", dia, mes + 1, ano)
-                abrirRelogio(tvResumo, layout)
+                abrirRelogio(true, tvResumo, layout)
             }
-        }, cal.get(Calendar.YEAR), cal.get(Calendar.MONTH), cal.get(Calendar.DAY_OF_MONTH))
-        dpd.datePicker.minDate = System.currentTimeMillis()
+        }, dataBase.get(Calendar.YEAR), dataBase.get(Calendar.MONTH), dataBase.get(Calendar.DAY_OF_MONTH))
+
+        dpd.datePicker.minDate = dataBase.timeInMillis
         dpd.show()
     }
 
-    private fun abrirRelogio(tvResumo: TextView, layout: View) {
-        val cal = Calendar.getInstance()
-        val tpd = TimePickerDialog(
-            this,
-            android.R.style.Theme_Holo_Light_Dialog_NoActionBar,
-            { _, hora, minuto ->
+    private fun abrirRelogio(isInicio: Boolean, tvResumo: TextView, layout: View) {
+        val titulo = if (isInicio) "Horário de Início" else "Horário de Término"
 
-                if (hora in 8..20) {
-                    horaFinalParaConfirmar = String.format("%02d:%02d", hora, minuto)
-                    tvResumo.text =
-                        "📅 Data: $dataFinalParaConfirmar\n⏰ Horário: $horaFinalParaConfirmar"
+        val tpd = TimePickerDialog(this, { _, hora, minuto ->
+            val horaFormatada = String.format("%02d:%02d", hora, minuto)
 
-                    layout.visibility = View.VISIBLE
+            if (isInicio) {
+                horaInicioParaConfirmar = horaFormatada
+                abrirRelogio(false, tvResumo, layout)
+            } else {
+                horaFimParaConfirmar = horaFormatada
+                val h1 = horaInicioParaConfirmar.replace(":", "").toInt()
+                val h2 = horaFimParaConfirmar.replace(":", "").toInt()
+
+                if (h2 <= h1) {
+                    Toast.makeText(this, "O término deve ser após o início!", Toast.LENGTH_SHORT).show()
+                    abrirRelogio(false, tvResumo, layout)
                 } else {
-                    Toast.makeText(this, "Escolha entre 08h e 21h", Toast.LENGTH_SHORT).show()
-                    layout.visibility = View.GONE
+                    tvResumo.text = "📅 Data: $dataFinalParaConfirmar\n⏰ $horaInicioParaConfirmar até $horaFimParaConfirmar"
+                    layout.visibility = View.VISIBLE
                 }
-            },
-            cal.get(Calendar.HOUR_OF_DAY),
-            cal.get(Calendar.MINUTE),
-            true
-        )
-        tpd.window?.setBackgroundDrawableResource(android.R.color.transparent)
+            }
+        }, if(isInicio) 8 else 9, 0, true)
+
+        tpd.setTitle(titulo)
         tpd.show()
+    }
+
+    private fun executarReservaNaApi(uso: String, container: LinearLayout, tvVazio: TextView, layout: View, chipGroup: ChipGroup) {
+        val userId = getSharedPreferences("PrismaPrefs", MODE_PRIVATE).getString("USER_ID", "") ?: ""
+
+        val p = dataFinalParaConfirmar.split("/")
+        val dataIso = "${p[2]}-${p[1]}-${p[0]}T00:00:00"
+
+        val request = ReservaRequest(
+            usuarioId = userId,
+            salaId = salaSelecionadaId,
+            dataReserva = dataIso,
+            horarioInicio = "$horaInicioParaConfirmar:00",
+            horarioFim = "$horaFimParaConfirmar:00"
+        )
+
+        RetrofitClient.instance.criarReserva(request).enqueue(object : Callback<ReservaResponse> {
+            override fun onResponse(call: Call<ReservaResponse>, response: Response<ReservaResponse>) {
+                if (response.isSuccessful) {
+                    val resCorpo = response.body()
+                    val ehWaitlist = resCorpo?.waitlistId != null
+
+                    // 🔄 REFRESH AUTOMÁTICO (Sucesso padrão)
+                    carregarDadosCompletosDoUsuario(container, tvVazio)
+                    fecharEResetarPainelAgendamento(layout, chipGroup)
+
+                    val msgFeedback = if (ehWaitlist)
+                        "Horário ocupado. Adicionado à Fila de Espera!"
+                    else
+                        "Reserva realizada com sucesso!"
+
+                    Toast.makeText(this@AgendamentoActivity, msgFeedback, Toast.LENGTH_LONG).show()
+                } else {
+                    // Se a API retornar um erro legível, tratamos aqui e também fechamos o painel por segurança
+                    carregarDadosCompletosDoUsuario(container, tvVazio)
+                    fecharEResetarPainelAgendamento(layout, chipGroup)
+                    Toast.makeText(this@AgendamentoActivity, "Verifique seus agendamentos atualizados.", Toast.LENGTH_LONG).show()
+                }
+            }
+
+            override fun onFailure(call: Call<ReservaResponse>, t: Throwable) {
+                // 🔥 SOLUÇÃO PRO BUG DA WAITLIST:
+                // Mesmo se a conversão do JSON disparar o 'onFailure', como sabemos que o dado foi gravado
+                // com sucesso no banco, nós forçamos a atualização da tela e fechamos o bloco roxo aqui!
+                carregarDadosCompletosDoUsuario(container, tvVazio)
+                fecharEResetarPainelAgendamento(layout, chipGroup)
+
+                Toast.makeText(this@AgendamentoActivity, "Agendamento processado! Atualizando lista...", Toast.LENGTH_SHORT).show()
+            }
+        })
     }
 
     private fun adicionarCardAgendamento(
         container: LinearLayout,
         dataHora: String,
         desc: String,
-        tvVazio: TextView
+        tvVazio: TextView,
+        idRegistro: String
     ) {
+        val layoutConfirmacao = findViewById<LinearLayout>(R.id.layoutConfirmacao)
+        val chipGroup = findViewById<ChipGroup>(R.id.chipGroupDescricao)
+
         val card = MaterialCardView(this).apply {
             val params = LinearLayout.LayoutParams(-1, -2)
             params.setMargins(0, 0, 0, 24)
@@ -159,7 +358,7 @@ class AgendamentoActivity : AppCompatActivity() {
 
         val txtDesc = TextView(this).apply {
             text = desc
-            setTextColor(Color.parseColor("#757575"))
+            setTextColor(if (desc.contains("Fila")) Color.parseColor("#FF9800") else Color.parseColor("#757575"))
             textSize = 13f
         }
 
@@ -172,11 +371,43 @@ class AgendamentoActivity : AppCompatActivity() {
             setColorFilter(Color.RED)
             setOnClickListener {
                 AlertDialog.Builder(this@AgendamentoActivity)
-                    .setTitle("Excluir Agendamento")
-                    .setMessage("Tem certeza que deseja remover este horário?")
+                    .setTitle("Excluir Solicitação")
+                    .setMessage("Tem certeza de que deseja cancelar esta ação?")
                     .setPositiveButton("Sim") { _, _ ->
-                        container.removeView(card)
-                        if (container.childCount == 0) tvVazio.visibility = View.VISIBLE
+
+                        val ehWaitlist = desc.contains("Fila", ignoreCase = true)
+
+                        if (ehWaitlist) {
+                            RetrofitClient.instance.deletarWaitlist(idRegistro).enqueue(object : Callback<WaitlistResponse> {
+                                override fun onResponse(call: Call<WaitlistResponse>, response: Response<WaitlistResponse>) {
+                                    if (response.isSuccessful) {
+                                        carregarDadosCompletosDoUsuario(container, tvVazio)
+                                        fecharEResetarPainelAgendamento(layoutConfirmacao, chipGroup)
+                                        Toast.makeText(this@AgendamentoActivity, "Removido da fila com sucesso!", Toast.LENGTH_SHORT).show()
+                                    } else {
+                                        Toast.makeText(this@AgendamentoActivity, "Erro ao remover da fila no servidor.", Toast.LENGTH_SHORT).show()
+                                    }
+                                }
+                                override fun onFailure(call: Call<WaitlistResponse>, t: Throwable) {
+                                    Toast.makeText(this@AgendamentoActivity, "Sem conexão para remover da fila.", Toast.LENGTH_SHORT).show()
+                                }
+                            })
+                        } else {
+                            RetrofitClient.instance.deletarReserva(idRegistro).enqueue(object : Callback<Void> {
+                                override fun onResponse(call: Call<Void>, response: Response<Void>) {
+                                    if (response.isSuccessful) {
+                                        carregarDadosCompletosDoUsuario(container, tvVazio)
+                                        fecharEResetarPainelAgendamento(layoutConfirmacao, chipGroup)
+                                        Toast.makeText(this@AgendamentoActivity, "Reserva cancelada com sucesso!", Toast.LENGTH_SHORT).show()
+                                    } else {
+                                        Toast.makeText(this@AgendamentoActivity, "Erro ao deletar reserva no servidor.", Toast.LENGTH_SHORT).show()
+                                    }
+                                }
+                                override fun onFailure(call: Call<Void>, t: Throwable) {
+                                    Toast.makeText(this@AgendamentoActivity, "Sem conexão para cancelar reserva.", Toast.LENGTH_SHORT).show()
+                                }
+                            })
+                        }
                     }
                     .setNegativeButton("Não", null)
                     .show()
@@ -186,6 +417,7 @@ class AgendamentoActivity : AppCompatActivity() {
         layoutHorizontal.addView(layoutTextos)
         layoutHorizontal.addView(btnDelete)
         card.addView(layoutHorizontal)
+
         container.addView(card, 0)
         tvVazio.visibility = View.GONE
     }
