@@ -1,6 +1,5 @@
 package com.example.prisma
 
-
 import android.content.Intent
 import android.os.Bundle
 import android.view.View
@@ -66,33 +65,56 @@ class MainActivity : AppCompatActivity() {
                         ) {
                             if (response.isSuccessful) {
                                 val loginResponse = response.body()
+                                val usuarioId = loginResponse?.id
 
-                                val sharedPreferences =
-                                    getSharedPreferences("PrismaPrefs", MODE_PRIVATE)
-                                sharedPreferences.edit()
-                                    .putString("USER_ID", loginResponse?.id)
-                                    .putString("USER_EMAIL", loginResponse?.email)
-                                    .apply()
+                                if (usuarioId != null) {
+                                    // 1. Salva os dados iniciais que vieram do Login
+                                    val sharedPreferences = getSharedPreferences("PrismaPrefs", MODE_PRIVATE)
+                                    sharedPreferences.edit()
+                                        .putString("USER_ID", usuarioId)
+                                        .putString("USER_EMAIL", loginResponse.email)
+                                        .apply()
 
+                                    // 2. CHAMADA DEFINITIVA: Bate no banco para buscar o tipo real do usuário
+                                    RetrofitClient.instance.obterUsuarioPorId(usuarioId)
+                                        .enqueue(object : retrofit2.Callback<LoginResponse> {
+                                            override fun onResponse(
+                                                call: retrofit2.Call<LoginResponse>,
+                                                userResponse: retrofit2.Response<LoginResponse>
+                                            ) {
+                                                if (userResponse.isSuccessful && userResponse.body() != null) {
+                                                    val usuarioCompleto = userResponse.body()!!
 
-                                if (emailInserido == "admin") {
-                                    startActivity(
-                                        Intent(
-                                            this@MainActivity,
-                                            AdminActivity::class.java
-                                        )
-                                    )
+                                                    // Salva o tipo numérico real encontrado no MySQL
+                                                    sharedPreferences.edit().putInt("USER_TIPO", usuarioCompleto.tipo ?: 1).apply()
+
+                                                    // 3. Validação estrita pelo banco (2 = Admin, qualquer outra coisa = Comum)
+                                                    if (usuarioCompleto.tipo == 2) {
+                                                        startActivity(Intent(this@MainActivity, AdminActivity::class.java))
+                                                    } else {
+                                                        val intent = Intent(this@MainActivity, LoadingActivity::class.java)
+                                                        intent.putExtra(
+                                                            "NOME_USUARIO",
+                                                            loginResponse.message.replace("Bem-vindo, ", "").replace("!", "")
+                                                        )
+                                                        startActivity(intent)
+                                                    }
+                                                    finish()
+                                                } else {
+                                                    tvErroEmail.text = "Erro ao validar permissões no banco de dados."
+                                                    tvErroEmail.visibility = View.VISIBLE
+                                                }
+                                            }
+
+                                            override fun onFailure(call: retrofit2.Call<LoginResponse>, t: Throwable) {
+                                                tvErroEmail.text = "Falha de conexão ao verificar nível de acesso."
+                                                tvErroEmail.visibility = View.VISIBLE
+                                            }
+                                        })
                                 } else {
-                                    val intent =
-                                        Intent(this@MainActivity, LoadingActivity::class.java)
-                                    intent.putExtra(
-                                        "NOME_USUARIO",
-                                        loginResponse?.message?.replace("Bem-vindo, ", "")
-                                            ?.replace("!", "")
-                                    )
-                                    startActivity(intent)
+                                    tvErroEmail.text = "Erro interno: ID do usuário não retornado."
+                                    tvErroEmail.visibility = View.VISIBLE
                                 }
-                                finish()
 
                             } else if (response.code() == 401) {
                                 tvErroSenha.text = "E-mail ou senha incorretos"
