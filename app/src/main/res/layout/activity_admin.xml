@@ -1,51 +1,81 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="#F4F7FD"
-    android:padding="20dp">
+    tools:context=".AdminActivity">
 
-    <TextView
-        android:id="@+id/tvAdminTitle"
-        android:layout_width="wrap_content"
+    <RelativeLayout
+        android:id="@+id/rlAdminHeader"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Painel Administrativo"
-        android:textColor="#8A2BE2"
-        android:textSize="22sp"
-        android:textStyle="bold"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
-
-    <ImageView
-        android:id="@+id/iconSairAdmin"
-        android:layout_width="32dp"
-        android:layout_height="32dp"
-        android:src="@android:drawable/ic_menu_revert"
+        android:padding="20dp"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toTopOf="@id/tvAdminTitle" />
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <ImageView
+            android:id="@+id/iconSairAdmin"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:layout_alignParentStart="true"
+            android:layout_centerVertical="true"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:clickable="true"
+            android:contentDescription="Sair e voltar para o Login"
+            android:focusable="true"
+            android:padding="4dp"
+            android:src="@android:drawable/ic_menu_revert"
+            app:tint="#8A2BE2" />
+
+        <TextView
+            android:id="@+id/tvAdminTitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_toEndOf="@id/iconSairAdmin"
+            android:layout_centerVertical="true"
+            android:layout_marginStart="12dp"
+            android:fontFamily="sans-serif-medium"
+            android:text="Painel Administrativo"
+            android:textColor="#8A2BE2"
+            android:textSize="22sp"
+            android:textStyle="bold" />
+
+    </RelativeLayout>
 
     <ScrollView
+        android:id="@+id/svAdminContent"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_marginTop="20dp"
+        android:fillViewport="true"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/tvAdminTitle">
+        app:layout_constraintTop_toBottomOf="@id/rlAdminHeader">
 
         <LinearLayout
             android:id="@+id/containerAdminHorarios"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical">
+            android:orientation="vertical"
+            android:animateLayoutChanges="true"
+            android:paddingStart="20dp"
+            android:paddingEnd="20dp"
+            android:paddingBottom="20dp">
 
             <TextView
                 android:id="@+id/tvAdminListaVazia"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
+                android:layout_height="match_parent"
+                android:fontFamily="sans-serif"
                 android:gravity="center"
                 android:padding="50dp"
-                android:text="Nenhum agendamento para gerenciar." />
+                android:text="Nenhum agendamento pendente\npara gerenciamento."
+                android:textColor="#665665"
+                android:textSize="16sp"
+                android:visibility="visible" />
         </LinearLayout>
+
     </ScrollView>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

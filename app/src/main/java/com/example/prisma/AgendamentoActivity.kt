@@ -50,7 +50,6 @@ class AgendamentoActivity : AppCompatActivity() {
         findViewById<TextView>(R.id.tvNomeUsuario).text =
             "Olá, ${intent.getStringExtra("NOME_USUARIO") ?: "Usuário"}"
 
-        // Carrega os dados iniciais da API
         carregarSalas(spinnerSalas)
         carregarDadosCompletosDoUsuario(containerHorarios, tvListaVazia)
 
@@ -61,7 +60,6 @@ class AgendamentoActivity : AppCompatActivity() {
             finish()
         }
 
-        // 🔄 Botão de Atualizar Manual: limpa as variáveis e fecha o quadro roxo
         iconRefresh.setOnClickListener {
             Toast.makeText(this, "Atualizando agendamentos...", Toast.LENGTH_SHORT).show()
 
@@ -70,7 +68,7 @@ class AgendamentoActivity : AppCompatActivity() {
             fecharEResetarPainelAgendamento(layoutConfirmacao, chipGroup)
         }
 
-        // 📅 Abre o fluxo de agendamento (Calendário -> Relógio Início -> Relógio Fim)
+        //(Calendário -> Relógio Início -> Relógio Fim)
         btnNovoAgendamento.setOnClickListener {
             buscarDataApiEAbrirCalendario(tvResumoTexto, layoutConfirmacao)
         }
@@ -97,7 +95,7 @@ class AgendamentoActivity : AppCompatActivity() {
         }
     }
 
-    // 🧹 Função utilitária para fechar o bloco roxo e limpar os dados inseridos
+    // limpa os dados inseridos
     private fun fecharEResetarPainelAgendamento(layout: View, chipGroup: ChipGroup) {
         layout.visibility = View.GONE
         chipGroup.clearCheck()
@@ -112,15 +110,15 @@ class AgendamentoActivity : AppCompatActivity() {
                 if (response.isSuccessful) {
                     listaSalas = response.body() ?: emptyList()
                     if (listaSalas.isNotEmpty()) {
-                        salaSelecionadaId = listaSalas[0].id
-                        val nomes = listaSalas.map { "${it.nome} (Cap: ${it.capacidade})" }
+                        salaSelecionadaId = listaSalas[0].id ?: ""
+                        val nomes = listaSalas.map { "${it.nome ?: "Sala"} (Cap: ${it.capacidade ?: 0})" }
                         val adapter = ArrayAdapter(this@AgendamentoActivity, android.R.layout.simple_spinner_item, nomes)
                         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
                         spinner.adapter = adapter
 
                         spinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
                             override fun onItemSelected(p0: AdapterView<*>?, p1: View?, pos: Int, p3: Long) {
-                                salaSelecionadaId = listaSalas[pos].id
+                                salaSelecionadaId = listaSalas[pos].id ?: ""
                             }
                             override fun onNothingSelected(p0: AdapterView<*>?) {}
                         }
@@ -138,7 +136,7 @@ class AgendamentoActivity : AppCompatActivity() {
         container.removeAllViews()
         var totalItensAdicionados = 0
 
-        // 1ª Chamada: Buscar Reservas Normais
+        // Buscar Reservas Normais
         RetrofitClient.instance.listarReservas().enqueue(object : Callback<List<ReservaResponse>> {
             override fun onResponse(call: Call<List<ReservaResponse>>, response: Response<List<ReservaResponse>>) {
                 if (response.isSuccessful) {
@@ -151,10 +149,14 @@ class AgendamentoActivity : AppCompatActivity() {
                         val horarioFim = reserva.horarioFim ?: "00:00"
                         val reservaId = reserva.id ?: ""
 
+                        // Captura o motivo real da reserva normal vindo da API
+                        val motivoUso = reserva.motivo ?: "Não informado"
+
                         val dataFormatada = if (dataReserva.contains("T")) dataReserva.split("T")[0] else dataReserva
                         val horarioInfo = "$dataFormatada ($horarioInicio - $horarioFim)"
 
-                        adicionarCardAgendamento(container, horarioInfo, "Reserva (Confirmado)", tvVazio, reservaId)
+                        // Passa o motivoUso corretamente para a criação do card
+                        adicionarCardAgendamento(container, horarioInfo, "Reserva (Confirmado)", tvVazio, reservaId, motivoUso)
                         totalItensAdicionados++
                     }
                 }
@@ -165,23 +167,24 @@ class AgendamentoActivity : AppCompatActivity() {
             }
         })
 
-        // 2ª Chamada: Buscar os agendamentos na Fila de Espera (Waitlist)
+        // Buscar waitlist (fila de espera)
         RetrofitClient.instance.listarWaitlist().enqueue(object : Callback<List<WaitlistResponse>> {
-            override fun onResponse(call: Call<List<WaitlistResponse>>, response: Response<List<WaitlistResponse>>) {
-                if (response.isSuccessful) {
-                    val todaWaitlist = response.body() ?: emptyList()
+            override fun onResponse(call: Call<List<WaitlistResponse>>, responseWaitlist: Response<List<WaitlistResponse>>) {
+                if (responseWaitlist.isSuccessful) {
+                    val todaWaitlist = responseWaitlist.body() ?: emptyList()
                     val minhaWaitlist = todaWaitlist.filter { (it.usuarioId ?: "").equals(userId, ignoreCase = true) }
 
                     minhaWaitlist.forEach { itemFila ->
                         val dataReserva = itemFila.dataReserva ?: ""
                         val horarioInicio = itemFila.horarioInicio ?: "00:00"
                         val horarioFim = itemFila.horarioFim ?: "00:00"
-                        val waitlistId = itemFila.id
+                        val waitlistId = itemFila.id?.toString() ?: ""
 
                         val dataFormatada = if (dataReserva.contains("T")) dataReserva.split("T")[0] else dataReserva
                         val horarioInfo = "$dataFormatada ($horarioInicio - $horarioFim)"
 
-                        adicionarCardAgendamento(container, horarioInfo, "Fila de Espera", tvVazio, waitlistId)
+                        // Como combinado, para a fila de espera deixamos o texto padrão por enquanto
+                        adicionarCardAgendamento(container, horarioInfo, "Fila de Espera", tvVazio, waitlistId, "")
                         totalItensAdicionados++
                     }
                 }
@@ -280,7 +283,8 @@ class AgendamentoActivity : AppCompatActivity() {
             salaId = salaSelecionadaId,
             dataReserva = dataIso,
             horarioInicio = "$horaInicioParaConfirmar:00",
-            horarioFim = "$horaFimParaConfirmar:00"
+            horarioFim = "$horaFimParaConfirmar:00",
+            motivo = uso
         )
 
         RetrofitClient.instance.criarReserva(request).enqueue(object : Callback<ReservaResponse> {
@@ -289,7 +293,7 @@ class AgendamentoActivity : AppCompatActivity() {
                     val resCorpo = response.body()
                     val ehWaitlist = resCorpo?.waitlistId != null
 
-                    // 🔄 REFRESH AUTOMÁTICO (Sucesso padrão)
+                    // REFRESH AUTOMÁTICO
                     carregarDadosCompletosDoUsuario(container, tvVazio)
                     fecharEResetarPainelAgendamento(layout, chipGroup)
 
@@ -308,9 +312,6 @@ class AgendamentoActivity : AppCompatActivity() {
             }
 
             override fun onFailure(call: Call<ReservaResponse>, t: Throwable) {
-                // 🔥 SOLUÇÃO PRO BUG DA WAITLIST:
-                // Mesmo se a conversão do JSON disparar o 'onFailure', como sabemos que o dado foi gravado
-                // com sucesso no banco, nós forçamos a atualização da tela e fechamos o bloco roxo aqui!
                 carregarDadosCompletosDoUsuario(container, tvVazio)
                 fecharEResetarPainelAgendamento(layout, chipGroup)
 
@@ -324,7 +325,8 @@ class AgendamentoActivity : AppCompatActivity() {
         dataHora: String,
         desc: String,
         tvVazio: TextView,
-        idRegistro: String
+        idRegistro: String,
+        motivoReal: String // Parâmetro adicionado para receber o motivo
     ) {
         val layoutConfirmacao = findViewById<LinearLayout>(R.id.layoutConfirmacao)
         val chipGroup = findViewById<ChipGroup>(R.id.chipGroupDescricao)
@@ -357,7 +359,9 @@ class AgendamentoActivity : AppCompatActivity() {
         }
 
         val txtDesc = TextView(this).apply {
-            text = desc
+            // Se for fila de espera e estiver em branco, mostra apenas a descrição.
+            // Se for reserva normal, mostra "Reserva (Confirmado) - Motivo: Estudar"
+            text = if (motivoReal.isEmpty()) desc else "$desc - $motivoReal"
             setTextColor(if (desc.contains("Fila")) Color.parseColor("#FF9800") else Color.parseColor("#757575"))
             textSize = 13f
         }

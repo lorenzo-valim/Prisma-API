@@ -1,4 +1,5 @@
 package com.example.prisma.back
+import com.google.gson.annotations.SerializedName
 data class LoginRequest(
     val email: String,
     val password: String
@@ -7,7 +8,10 @@ data class LoginRequest(
 data class LoginResponse(
     val message: String,
     val id: String,
-    val email: String
+    val email: String,
+
+    @SerializedName("tipo", alternate = ["Tipo", "role", "Role", "userType"])
+    val tipo: Int? = null
 )
 
 data class ForgotPasswordRequest(

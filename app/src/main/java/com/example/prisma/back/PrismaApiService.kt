@@ -47,6 +47,15 @@ interface PrismaApiService {
     fun listarWaitlist(): Call<List<WaitlistResponse>>
     @DELETE("api/Waitlist/del/{id}")
     fun deletarWaitlist(@Path("id") id: String): Call<WaitlistResponse>
+
+    @GET("api/Usuarios/{id}")
+    fun obterUsuarioPorId(@Path("id") id: String): Call<LoginResponse>
+
+    @GET("/api/Reserva")
+    fun obterTodasAsReservas(): retrofit2.Call<List<ReservaResponse>>
+
+    @DELETE("/api/Reserva/{id}")
+    fun cancelarReserva(@Path("id") id: String): retrofit2.Call<ReservaResponse>
 }
 
 
