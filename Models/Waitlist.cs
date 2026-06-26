@@ -14,5 +14,7 @@ namespace ProjetoPrisma.Models
         public TimeSpan HorarioInicio { get; set; }
         public TimeSpan HorarioFim { get; set; }
         public DateTime DataSolicitacao { get; set; } // Para ordenar por quem pediu primeiro
+         public string Motivo { get; set; } // Adicionando a propriedade Motivo
+        public string NomeUsuario { get; set; } // Adicionando a propriedade NomeUsuario
     }
 }

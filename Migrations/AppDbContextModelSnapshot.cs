@@ -37,6 +37,12 @@ namespace ProjetoPrisma.Migrations
                     b.Property<TimeSpan>("HorarioInicio")
                         .HasColumnType("time(6)");
 
+                    b.Property<string>("Motivo")
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("NomeUsuario")
+                        .HasColumnType("longtext");
+
                     b.Property<Guid>("SalaId")
                         .HasColumnType("binary(16)");
 
@@ -131,6 +137,12 @@ namespace ProjetoPrisma.Migrations
 
                     b.Property<TimeSpan>("HorarioInicio")
                         .HasColumnType("time(6)");
+
+                    b.Property<string>("Motivo")
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("NomeUsuario")
+                        .HasColumnType("longtext");
 
                     b.Property<Guid>("SalaId")
                         .HasColumnType("binary(16)");

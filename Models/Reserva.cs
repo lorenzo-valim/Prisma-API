@@ -20,5 +20,7 @@ namespace ProjetoPrisma.Models
         public TimeSpan HorarioInicio { get; set; }
         public TimeSpan HorarioFim { get; set; }
         public int StatusReserva { get; set; }
+        public string Motivo { get; set; } // Adicionando a propriedade Motivo
+        public string NomeUsuario { get; set; } // Adicionando a propriedade NomeUsuario
     }
 }
