@@ -44,19 +44,33 @@ namespace ProjetoPrisma.Controllers
 
         // POST: api/Reserva
         [HttpPost]
+        // POST: api/Reserva
+        [HttpPost]
         public async Task<IActionResult> CreateReserva(Reserva reserva)
         {
+            // 1. Validação da flag "Motivo"
+            var motivosValidos = new List<string> { "Estudos", "Podcast", "Reunião" };
+            if (string.IsNullOrEmpty(reserva.Motivo) || !motivosValidos.Contains(reserva.Motivo))
+            {
+                return BadRequest("Motivo inválido. As opções permitidas são: Estudos, Podcast ou Reunião.");
+            }
 
-            // Chama a função reutilizável
+            // Chama a função reutilizável para validar os IDs
             var erroValidacao = await ValidarIdsReservaAsync(reserva.SalaId, reserva.UsuarioId);
 
             // O "if" agora só verifica se a função retornou algum erro
             if (erroValidacao != null)
             {
-
                 return BadRequest(erroValidacao);
             }
 
+            // 2. Buscar o nome do usuário pelo ID e preencher na reserva
+            var usuario = await _appDbContext.Usuarios.FindAsync(reserva.UsuarioId);
+            if (usuario != null)
+            {
+                // Preenche o nome do usuário na reserva automaticamente
+                reserva.NomeUsuario = usuario.Nome; 
+            }
 
             //Início da verificação da data da reserva utilizando o horário oficial do NTP
             try
@@ -97,6 +111,8 @@ namespace ProjetoPrisma.Controllers
                     DataReserva = reserva.DataReserva,
                     HorarioInicio = reserva.HorarioInicio,
                     HorarioFim = reserva.HorarioFim,
+                    Motivo = motivosValidos.Contains(reserva.Motivo) ? reserva.Motivo : "Outro", // Valida o motivo antes de adicionar
+                    NomeUsuario = usuario.Nome,
                     DataSolicitacao = DateTime.UtcNow
                 };
                 _appDbContext.Waitlist.Add(waitlist);
@@ -208,6 +224,8 @@ namespace ProjetoPrisma.Controllers
                     DataReserva = waitlistEntry.DataReserva,
                     HorarioInicio = waitlistEntry.HorarioInicio,
                     HorarioFim = waitlistEntry.HorarioFim,
+                    Motivo = waitlistEntry.Motivo,
+                    NomeUsuario = waitlistEntry.NomeUsuario,
                     StatusReserva = 1 // StatusReserva.Ativa
                 };
                 _appDbContext.Reservas.Add(novaReserva);
@@ -257,6 +275,7 @@ namespace ProjetoPrisma.Controllers
                 TimeZoneInfo fusoBrasilia = TimeZoneInfo.FindSystemTimeZoneById("E. South America Standard Time");
                 // Converte o horário UTC para o horário de Brasília (GMT -3)
                 DateTime horarioBrasilia = TimeZoneInfo.ConvertTimeFromUtc(ntpDateTimeUtc, fusoBrasilia);
+                Console.WriteLine($"Horário de Brasília: {horarioBrasilia}");
                 return Ok(new { horarioBrasilia = horarioBrasilia.ToString("yyyy-MM-ddTHH:mm:ss") });
             }
             catch (Exception)
