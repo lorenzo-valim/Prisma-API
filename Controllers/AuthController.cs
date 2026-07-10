@@ -191,7 +191,7 @@ namespace ProjetoPrisma.Controllers
         [HttpPost("verify-otp-reset")]
         public async Task<IActionResult> VerifyOtpReset([FromBody] VerifyOtpDto dto)
         {
-            var user = await _appDbContext.Usuarios.FirstOrDefaultAsync(u => u.Email == dto.Email);
+            var user = await _appDbContext.Usuarios.FirstOrDefaultAsync(u => u.Email == dto.Email); 
 
             // Verifica a coluna CORRETA de recuperação de senha!
             if (user == null || user.VerificationTokenResetPassword != dto.Code)
