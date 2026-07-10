@@ -21,7 +21,7 @@ namespace ProjetoPrisma.Controllers
         private readonly IOptions<EmailVerificationSettings> _emailVerificationSettings;
 
         public AuthController(
-            AppDbContext appDbContext, 
+            AppDbContext appDbContext,
             IEmailService emailService,
             IOptions<EmailVerificationSettings> emailVerificationSettings)
         {
@@ -64,6 +64,11 @@ namespace ProjetoPrisma.Controllers
                 return StatusCode(500, new { message = "O formato da senha salva no banco é incompatível. Crie um novo usuário para testar." });
             }
 
+            if (!usuario.IsEmailVerified)
+            {
+                return BadRequest(new { message = "Por favor, valide seu e-mail com o código de segurança antes de fazer login." });
+            }
+
             return Ok(new
             {
                 message = $"Bem-vindo, {usuario.Nome}!",
@@ -82,11 +87,11 @@ namespace ProjetoPrisma.Controllers
             {
                 return BadRequest("O e-mail já está em uso.");
             }
-            
+
             // Generate secure OTP code
             string otpCode = GenerateSecureOtp();
             int otpExpirationMinutes = _emailVerificationSettings.Value.OtpExpirationMinutes;
-            
+
             // 2. Creates the user with the generated token
             var newUser = new Usuario
             {
@@ -127,31 +132,31 @@ namespace ProjetoPrisma.Controllers
             return (randomNumber % 900000 + 100000).ToString();
         }
 
-      [HttpPost("verify-otp")]
-public async Task<IActionResult> VerifyOtp([FromBody] VerifyOtpDto dto)
-{
-    
-    // Busca o usuário pelo email
-    var user = await _appDbContext.Usuarios.FirstOrDefaultAsync(u => u.Email == dto.Email);
+        [HttpPost("verify-otp")]
+        public async Task<IActionResult> VerifyOtp([FromBody] VerifyOtpDto dto)
+        {
 
-    if (user == null) return BadRequest("Usuário não encontrado.");
-    
-    if (user.VerificationToken != dto.Code) return BadRequest("Código inválido.");
-    
-    if (user.TokenExpiration < DateTime.UtcNow) return BadRequest("O código expirou.");
+            // Busca o usuário pelo email
+            var user = await _appDbContext.Usuarios.FirstOrDefaultAsync(u => u.Email == dto.Email);
 
-    // Sucesso!
-    user.IsEmailVerified = true;
-    user.VerificationToken = null;
-    user.TokenExpiration = null;
+            if (user == null) return BadRequest("Usuário não encontrado.");
 
-    await _appDbContext.SaveChangesAsync();
+            if (user.VerificationToken != dto.Code) return BadRequest("Código inválido.");
 
-    return Ok("Conta verificada com sucesso!");
-}
+            if (user.TokenExpiration < DateTime.UtcNow) return BadRequest("O código expirou.");
 
-[HttpPost("send-otp-reset-password")]
- public async Task<IActionResult> SendPasswordResetEmail([FromBody] EmailResetPasswordDto dto)
+            // Sucesso!
+            user.IsEmailVerified = true;
+            user.VerificationToken = null;
+            user.TokenExpiration = null;
+
+            await _appDbContext.SaveChangesAsync();
+
+            return Ok("Conta verificada com sucesso!");
+        }
+
+        [HttpPost("send-otp-reset-password")]
+        public async Task<IActionResult> SendPasswordResetEmail([FromBody] EmailResetPasswordDto dto)
         {
             // 1. Busca o usuário
             var user = await _appDbContext.Usuarios.FirstOrDefaultAsync(u => u.Email == dto.Email);
@@ -182,36 +187,56 @@ public async Task<IActionResult> VerifyOtp([FromBody] VerifyOtpDto dto)
 
             return Ok("Se o e-mail existir, um código de redefinição será enviado.");
         }
-[HttpPost("reset-password")]
-public async Task<IActionResult> VerifyResetPassword([FromBody] ForgotPasswordDto dto)
-{
-    // 1. Busca o usuário
-    var user = await _appDbContext.Usuarios.FirstOrDefaultAsync(u => u.Email == dto.Email);
-    
-    // 2. Validação genérica para evitar Enumeração de Usuários (não revela se o erro é no e-mail ou no código)
-    if (user == null || string.IsNullOrEmpty(user.VerificationTokenResetPassword) || user.VerificationTokenResetPassword != dto.Code) 
-    {
-        return BadRequest("Dados inválidos ou código incorreto.");
-    }
-    
-    // 3. Validação de expiração garantindo que a data não seja nula
-    if (!user.TokenExpirationResetPassword.HasValue || user.TokenExpirationResetPassword.Value < DateTime.UtcNow) 
-    {
-        return BadRequest("O código expirou. Por favor, solicite um novo.");
-    }
 
-    // 4. Atualiza a senha
-    user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.NewPassword);
-    
-    // 5. Invalida o token para evitar reúso
-    user.VerificationTokenResetPassword = null;
-    user.TokenExpirationResetPassword = null;
+        [HttpPost("verify-otp-reset")]
+        public async Task<IActionResult> VerifyOtpReset([FromBody] VerifyOtpDto dto)
+        {
+            var user = await _appDbContext.Usuarios.FirstOrDefaultAsync(u => u.Email == dto.Email);
 
-    // 6. Salva no banco
-    await _appDbContext.SaveChangesAsync();
+            // Verifica a coluna CORRETA de recuperação de senha!
+            if (user == null || user.VerificationTokenResetPassword != dto.Code)
+            {
+                return BadRequest("Código inválido.");
+            }
 
-    return Ok("Senha atualizada com sucesso!");
-}
+            if (user.TokenExpirationResetPassword < DateTime.UtcNow)
+            {
+                return BadRequest("O código expirou.");
+            }
+
+            // Apenas retorna OK para o Android saber que pode avançar a tela
+            return Ok("Código válido!");
+        }
+        [HttpPost("reset-password")]
+        public async Task<IActionResult> VerifyResetPassword([FromBody] ForgotPasswordDto dto)
+        {
+            // 1. Busca o usuário
+            var user = await _appDbContext.Usuarios.FirstOrDefaultAsync(u => u.Email == dto.Email);
+
+            // 2. Validação genérica para evitar Enumeração de Usuários (não revela se o erro é no e-mail ou no código)
+            if (user == null || string.IsNullOrEmpty(user.VerificationTokenResetPassword) || user.VerificationTokenResetPassword != dto.Code)
+            {
+                return BadRequest("Dados inválidos ou código incorreto.");
+            }
+
+            // 3. Validação de expiração garantindo que a data não seja nula
+            if (!user.TokenExpirationResetPassword.HasValue || user.TokenExpirationResetPassword.Value < DateTime.UtcNow)
+            {
+                return BadRequest("O código expirou. Por favor, solicite um novo.");
+            }
+
+            // 4. Atualiza a senha
+            user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.NewPassword);
+
+            // 5. Invalida o token para evitar reúso
+            user.VerificationTokenResetPassword = null;
+            user.TokenExpirationResetPassword = null;
+
+            // 6. Salva no banco
+            await _appDbContext.SaveChangesAsync();
+
+            return Ok("Senha atualizada com sucesso!");
+        }
 
     }
 }
